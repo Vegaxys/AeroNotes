@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+@theme {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --color-glass: rgba(255, 255, 255, 0.12);
+  --color-glass-strong: rgba(255, 255, 255, 0.2);
+  --color-glass-border: rgba(255, 255, 255, 0.22);
+
+  --blur-glass: 18px;
+
+  --color-accent: #7c9dff;
+  --color-accent-strong: #5b7cff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}

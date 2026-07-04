@@ -1,0 +1,18 @@
+export const IPC_CHANNELS = {
+  OVERLAY_SET_IGNORE_MOUSE: 'overlay:set-ignore-mouse',
+  NOTES_GET_ALL: 'notes:get-all',
+  NOTES_CHANGED: 'notes:changed',
+  NOTE_ADD: 'note:add',
+  NOTE_UPDATE_CONTENT: 'note:update-content',
+  NOTE_DETACH: 'note:detach',
+  NOTE_REDOCK: 'note:redock',
+  NOTE_FOCUS: 'note:focus',
+  NOTE_SET_ALWAYS_ON_TOP: 'note:set-always-on-top',
+  NOTE_SET_COLOR: 'note:set-color',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SET: 'settings:set',
+  SETTINGS_CHANGED: 'settings:changed',
+  SHELL_OPEN_PATH: 'shell:open-path',
+  DIALOG_PICK_PATH: 'dialog:pick-path',
+  IMAGE_SAVE: 'image:save'
+} as const
