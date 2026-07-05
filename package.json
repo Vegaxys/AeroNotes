@@ -10,7 +10,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist:win": "npm run build && cross-env ELECTRON_BUILDER_CACHE=./.cache/electron-builder electron-builder --win"
+    "dist:win": "npm run build && node scripts/build-win.cjs"
   },
   "dependencies": {
     "@tiptap/core": "^3.27.1",
@@ -40,7 +40,6 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
-    "cross-env": "^10.1.0",
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
