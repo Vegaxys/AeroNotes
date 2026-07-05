@@ -94,11 +94,11 @@ export function NoteFrame({
           </button>
           <button
             onClick={onRedock}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-black/50 hover:bg-black/10"
+            className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-black/50 hover:bg-black/10"
             aria-label="Ranger dans le dock"
             title="Ranger dans le dock"
           >
-            ⤵
+            ✕
           </button>
         </div>
       </div>

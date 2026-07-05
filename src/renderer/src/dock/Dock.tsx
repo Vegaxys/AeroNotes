@@ -13,15 +13,18 @@ export function Dock({ ref }: DockProps): React.JSX.Element {
   const dockExpandedWidth = useSettingsStore((s) => s.dockExpandedWidth)
 
   const width = dockCollapsed ? 28 : dockExpandedWidth
+  // Fades from the screen edge (dark) toward the collapse-tab side (transparent).
+  const gradientDirection = dockSide === 'right' ? 'to left' : 'to right'
 
   return (
     <div
       ref={ref}
       data-dock-root
-      className="fixed top-4 bottom-4 flex flex-col transition-[width] duration-200 ease-out"
+      className="fixed top-0 bottom-0 flex flex-col transition-[width] duration-200 ease-out"
       style={{
-        [dockSide]: 16,
-        width
+        [dockSide]: 0,
+        width,
+        background: `linear-gradient(${gradientDirection}, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0))`
       }}
     >
       {!dockCollapsed && (

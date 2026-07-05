@@ -1,0 +1,217 @@
+import { useEffect, useRef, useState } from 'react'
+import type { Editor } from '@tiptap/react'
+
+interface BlockDragHandleProps {
+  editor: Editor
+  containerRef: React.RefObject<HTMLElement | null>
+}
+
+interface Rect {
+  top: number
+  left: number
+  width: number
+  height: number
+}
+
+interface Boundary {
+  pos: number
+  top: number
+  left: number
+  width: number
+}
+
+function measureRelativeTo(dom: HTMLElement, container: HTMLElement): Rect {
+  const containerBox = container.getBoundingClientRect()
+  const box = dom.getBoundingClientRect()
+  return {
+    top: box.top - containerBox.top + container.scrollTop,
+    left: box.left - containerBox.left + container.scrollLeft,
+    width: box.width,
+    height: box.height
+  }
+}
+
+/**
+ * Finds whichever top-level block's row spans the given container-relative Y.
+ * Deliberately geometry-only (no `posAtCoords`): posAtCoords resolves to a
+ * *text* position and can fail to resolve reliably over a plain paragraph's
+ * own whitespace/gutter area (it mostly "worked" for wide blocks like tables
+ * or details just because they leave little room to miss), whereas checking
+ * "is this Y within this block's own rendered box" works uniformly for every
+ * block type regardless of X position.
+ */
+function findBlockAtY(editor: Editor, container: HTMLElement, y: number): { pos: number; rect: Rect } | null {
+  let result: { pos: number; rect: Rect } | null = null
+  editor.state.doc.forEach((_node, offset) => {
+    if (result) return
+    const dom = editor.view.nodeDOM(offset)
+    if (!(dom instanceof HTMLElement)) return
+    const rect = measureRelativeTo(dom, container)
+    if (y >= rect.top && y <= rect.top + rect.height) {
+      result = { pos: offset, rect }
+    }
+  })
+  return result
+}
+
+/** All the positions a block could be dropped at: before the first block, and after every block. */
+function computeBoundaries(editor: Editor, container: HTMLElement): Boundary[] {
+  const boundaries: Boundary[] = []
+  const firstDom = editor.view.nodeDOM(0)
+  if (firstDom instanceof HTMLElement) {
+    const rect = measureRelativeTo(firstDom, container)
+    boundaries.push({ pos: 0, top: rect.top, left: rect.left, width: rect.width })
+  }
+  editor.state.doc.forEach((node, offset) => {
+    const dom = editor.view.nodeDOM(offset)
+    if (dom instanceof HTMLElement) {
+      const rect = measureRelativeTo(dom, container)
+      boundaries.push({ pos: offset + node.nodeSize, top: rect.top + rect.height, left: rect.left, width: rect.width })
+    }
+  })
+  return boundaries
+}
+
+function findNearestBoundary(boundaries: Boundary[], y: number): Boundary | null {
+  let nearest: Boundary | null = null
+  let minDistance = Infinity
+  for (const boundary of boundaries) {
+    const distance = Math.abs(boundary.top - y)
+    if (distance < minDistance) {
+      minDistance = distance
+      nearest = boundary
+    }
+  }
+  return nearest
+}
+
+function moveBlock(editor: Editor, sourcePos: number, sourceSize: number, targetPos: number): void {
+  if (targetPos >= sourcePos && targetPos <= sourcePos + sourceSize) return
+
+  const { state, view } = editor
+  const slice = state.doc.slice(sourcePos, sourcePos + sourceSize)
+  const tr = state.tr.delete(sourcePos, sourcePos + sourceSize)
+  const mappedTarget = tr.mapping.map(targetPos)
+  tr.insert(mappedTarget, slice.content)
+  view.dispatch(tr)
+  view.focus()
+}
+
+export function BlockDragHandle({ editor, containerRef }: BlockDragHandleProps): React.JSX.Element | null {
+  const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; rect: Rect } | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<Boundary | null>(null)
+  const isDraggingRef = useRef(false)
+
+  // Track which top-level block is under the cursor, to position the grip. Our
+  // own hit-testing (not a third-party plugin's) so we fully control when the
+  // grip shows/hides instead of fighting an opaque hover-hide implementation.
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    function handleMouseMove(event: MouseEvent): void {
+      if (isDraggingRef.current) return
+      const containerBox = container!.getBoundingClientRect()
+      const y = event.clientY - containerBox.top + container!.scrollTop
+      setHoveredBlock(findBlockAtY(editor, container!, y))
+    }
+
+    function handleMouseLeave(): void {
+      if (!isDraggingRef.current) setHoveredBlock(null)
+    }
+
+    container.addEventListener('mousemove', handleMouseMove)
+    container.addEventListener('mouseleave', handleMouseLeave)
+    return () => {
+      container.removeEventListener('mousemove', handleMouseMove)
+      container.removeEventListener('mouseleave', handleMouseLeave)
+    }
+  }, [editor, containerRef])
+
+  // Highlight the block the grip currently targets. Depends on just the
+  // position (not the whole hoveredBlock object, which gets a new reference
+  // on every mousemove) so the class only toggles when the target actually
+  // changes block, not on every pixel of movement within the same one.
+  const hoveredPos = hoveredBlock?.pos
+  useEffect(() => {
+    if (hoveredPos === undefined) return
+    const dom = editor.view.nodeDOM(hoveredPos)
+    if (!(dom instanceof HTMLElement)) return
+    dom.classList.add('block-hover-target')
+    return () => dom.classList.remove('block-hover-target')
+  }, [editor, hoveredPos])
+
+  const startDrag = (event: React.MouseEvent): void => {
+    const container = containerRef.current
+    const block = hoveredBlock
+    if (!container || !block) return
+    event.preventDefault()
+
+    const node = editor.state.doc.nodeAt(block.pos)
+    if (!node) return
+
+    isDraggingRef.current = true
+    const sourcePos = block.pos
+    const sourceSize = node.nodeSize
+    const sourceDom = editor.view.nodeDOM(sourcePos)
+    if (sourceDom instanceof HTMLElement) sourceDom.classList.add('block-drag-source')
+
+    let latestTarget: Boundary | null = null
+
+    function handleMove(moveEvent: MouseEvent): void {
+      const boundaries = computeBoundaries(editor, container!)
+      const containerBox = container!.getBoundingClientRect()
+      const y = moveEvent.clientY - containerBox.top + container!.scrollTop
+      latestTarget = findNearestBoundary(boundaries, y)
+      setDropIndicator(latestTarget)
+    }
+
+    function handleUp(): void {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      isDraggingRef.current = false
+      if (sourceDom instanceof HTMLElement) sourceDom.classList.remove('block-drag-source')
+
+      if (latestTarget) {
+        moveBlock(editor, sourcePos, sourceSize, latestTarget.pos)
+      }
+      setDropIndicator(null)
+      setHoveredBlock(null)
+    }
+
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+  }
+
+  return (
+    <>
+      {hoveredBlock && (
+        <div
+          onMouseDown={startDrag}
+          className="block-drag-handle-grip"
+          style={{ position: 'absolute', top: hoveredBlock.rect.top }}
+          aria-label="Deplacer ce bloc"
+          title="Glisser pour reordonner"
+        >
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      )}
+      {dropIndicator && (
+        <div
+          className="block-drop-indicator"
+          style={{
+            position: 'absolute',
+            top: dropIndicator.top,
+            left: dropIndicator.left,
+            width: dropIndicator.width
+          }}
+        />
+      )}
+    </>
+  )
+}

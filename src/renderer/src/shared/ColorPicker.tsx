@@ -39,7 +39,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
         title="Changer la couleur"
       />
       {open && (
-        <div className="absolute right-0 top-8 z-10 flex w-64 flex-col gap-3 rounded-[var(--radius-md)] border border-black/10 bg-white/95 p-4 shadow-xl">
+        <div className="absolute right-0 top-8 z-10 flex w-64 flex-col gap-3 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-4 shadow-xl">
           <div className="grid grid-cols-4 gap-4">
             {ALL_PRESETS.map((color, index) => {
               const isActive = isSameNoteColor(color, value)
@@ -50,8 +50,8 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
                     onChange(color)
                     setOpen(false)
                   }}
-                  className={`h-8 w-8 rounded-full border border-black/10 ${
-                    isActive ? 'ring-2 ring-offset-2 ring-black/60' : ''
+                  className={`h-8 w-8 rounded-full border border-white/15 ${
+                    isActive ? 'ring-2 ring-offset-2 ring-offset-neutral-900 ring-white' : ''
                   }`}
                   style={{ background: noteColorToCss(color) }}
                   aria-label={`Couleur ${index + 1}`}
@@ -60,34 +60,34 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
             })}
           </div>
 
-          <div className="h-px bg-black/10" />
+          <div className="h-px bg-white/10" />
 
-          <label className="flex items-center gap-2 text-xs text-black/60">
+          <label className="flex items-center gap-2 text-xs text-white/60">
             <input
               type="color"
               value={value.type === 'solid' ? (value.value as string) : '#ffffff'}
               onChange={(e) => onChange({ type: 'solid', value: e.target.value })}
-              className="h-8 w-8 cursor-pointer rounded border border-black/10"
+              className="h-8 w-8 cursor-pointer rounded border border-white/15"
               aria-label="Couleur personnalisee"
             />
             Couleur personnalisee
           </label>
 
           <div className="flex flex-col gap-2">
-            <span className="text-xs text-black/60">Gradient personnalise</span>
+            <span className="text-xs text-white/60">Gradient personnalise</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="h-8 w-8 cursor-pointer rounded border border-black/10"
+                className="h-8 w-8 cursor-pointer rounded border border-white/15"
                 aria-label="Premiere couleur du gradient"
               />
               <input
                 type="color"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="h-8 w-8 cursor-pointer rounded border border-black/10"
+                className="h-8 w-8 cursor-pointer rounded border border-white/15"
                 aria-label="Seconde couleur du gradient"
               />
               <input
@@ -96,12 +96,12 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
                 max={360}
                 value={customAngle}
                 onChange={(e) => setCustomAngle(Number(e.target.value))}
-                className="w-14 rounded border border-black/10 px-1 py-1 text-xs text-black/70"
+                className="w-14 rounded border border-white/15 bg-transparent px-1 py-1 text-xs text-white/70"
                 aria-label="Angle du gradient"
               />
               <button
                 onClick={applyCustomGradient}
-                className="rounded-[var(--radius-sm)] bg-black/10 px-2 py-1 text-xs text-black/70 hover:bg-black/20"
+                className="rounded-[var(--radius-sm)] bg-white/10 px-2 py-1 text-xs text-white/80 hover:bg-white/20"
               >
                 Appliquer
               </button>

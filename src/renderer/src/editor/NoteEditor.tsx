@@ -1,10 +1,10 @@
 import { useRef } from 'react'
 import type { JSONContent } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import { createNoteEditorExtensions } from './extensions'
 import { BubbleToolbar } from './BubbleToolbar'
 import { TableControls } from './TableControls'
+import { BlockDragHandle } from './BlockDragHandle'
 import { imagePasteDropProps } from './imagePasteDrop'
 import '../styles/editor.css'
 
@@ -38,16 +38,7 @@ export function NoteEditor({ content, onChange }: NoteEditorProps): React.JSX.El
       className="note-editor relative h-full overflow-y-auto py-3 pl-10 pr-4 text-sm text-black/90"
     >
       <BubbleToolbar editor={editor} />
-      <DragHandle editor={editor}>
-        <div className="drag-handle-grip">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-      </DragHandle>
+      <BlockDragHandle editor={editor} containerRef={containerRef} />
       <TableControls editor={editor} containerRef={containerRef} />
       <EditorContent editor={editor} />
     </div>
