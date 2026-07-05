@@ -25,3 +25,11 @@ export function noteColorToCss(color: NoteColor): string {
   const [from, to] = color.value as [string, string]
   return `linear-gradient(${color.angle ?? 135}deg, ${from}, ${to})`
 }
+
+export function isSameNoteColor(a: NoteColor, b: NoteColor): boolean {
+  if (a.type !== b.type) return false
+  if (a.type === 'solid') return a.value === b.value
+  const [aFrom, aTo] = a.value as [string, string]
+  const [bFrom, bTo] = b.value as [string, string]
+  return aFrom === bFrom && aTo === bTo
+}

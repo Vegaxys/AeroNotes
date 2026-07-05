@@ -40,7 +40,18 @@ export const SlashCommand = Extension.create({
                 showOnCreate: true,
                 interactive: true,
                 trigger: 'manual',
-                placement: 'bottom-start'
+                placement: 'bottom-start',
+                // Note windows are small, so the menu must reposition itself to
+                // stay fully visible rather than get clipped near an edge.
+                popperOptions: {
+                  modifiers: [
+                    {
+                      name: 'flip',
+                      options: { fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }
+                    },
+                    { name: 'preventOverflow', options: { boundary: 'clippingParents', padding: 8 } }
+                  ]
+                }
               })
             },
             onUpdate(props) {

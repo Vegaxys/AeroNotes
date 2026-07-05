@@ -9,6 +9,8 @@ export const IPC_CHANNELS = {
   NOTE_FOCUS: 'note:focus',
   NOTE_SET_ALWAYS_ON_TOP: 'note:set-always-on-top',
   NOTE_SET_COLOR: 'note:set-color',
+  NOTE_SET_TITLE: 'note:set-title',
+  NOTES_REORDER: 'notes:reorder',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_CHANGED: 'settings:changed',

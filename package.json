@@ -13,6 +13,7 @@
     "dist:win": "npm run build && cross-env ELECTRON_BUILDER_CACHE=./.cache/electron-builder electron-builder --win"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "@tiptap/core": "^3.27.1",
     "@tiptap/extension-color": "^3.27.1",
     "@tiptap/extension-details": "^3.27.1",

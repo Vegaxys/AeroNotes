@@ -19,6 +19,8 @@ declare module '@tiptap/core' {
 
 export const LocalLink = Mark.create({
   name: 'localLink',
+  // Typing right after a local link should produce plain text, not extend the link.
+  inclusive: false,
 
   addAttributes() {
     return {

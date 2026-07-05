@@ -13,6 +13,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
   const redockNote = useNotesStore((s) => s.redockNote)
   const setNoteAlwaysOnTop = useNotesStore((s) => s.setNoteAlwaysOnTop)
   const setNoteColor = useNotesStore((s) => s.setNoteColor)
+  const setNoteTitle = useNotesStore((s) => s.setNoteTitle)
 
   if (!noteId || !note) {
     return null
@@ -26,6 +27,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
       onTogglePin={() => setNoteAlwaysOnTop(note.id, !note.alwaysOnTop)}
       onRedock={() => redockNote(note.id)}
       onColorChange={(color) => setNoteColor(note.id, color)}
+      onTitleChange={(title) => setNoteTitle(note.id, title)}
     >
       <NoteEditor
         content={note.content}

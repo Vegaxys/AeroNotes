@@ -52,4 +52,14 @@ export function registerNotesHandlers(): void {
     notesStore.setColor(id, color)
     broadcastNotes()
   })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_SET_TITLE, (_event, id: string, title: string) => {
+    notesStore.setTitle(id, title)
+    broadcastNotes()
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTES_REORDER, (_event, orderedIds: string[]) => {
+    notesStore.setDockOrder(orderedIds)
+    broadcastNotes()
+  })
 }

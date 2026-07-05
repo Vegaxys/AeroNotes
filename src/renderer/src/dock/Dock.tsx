@@ -17,14 +17,11 @@ export function Dock({ ref }: DockProps): React.JSX.Element {
   return (
     <div
       ref={ref}
-      className="fixed top-4 bottom-4 flex flex-col overflow-hidden rounded-[var(--radius-lg)] border shadow-2xl transition-[width] duration-200 ease-out"
+      data-dock-root
+      className="fixed top-4 bottom-4 flex flex-col transition-[width] duration-200 ease-out"
       style={{
         [dockSide]: 16,
-        width,
-        background: 'var(--color-glass)',
-        borderColor: 'var(--color-glass-border)',
-        backdropFilter: 'blur(var(--blur-glass))',
-        WebkitBackdropFilter: 'blur(var(--blur-glass))'
+        width
       }}
     >
       {!dockCollapsed && (

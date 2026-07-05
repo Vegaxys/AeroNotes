@@ -3,6 +3,33 @@
   min-height: 100px;
 }
 
+/* Themed scrollbar so it blends with the post-it's own color instead of the
+ * default OS scrollbar look. */
+.note-editor {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+}
+
+.note-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.note-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.note-editor::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.note-editor::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+  background-clip: padding-box;
+}
+
 .note-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -40,6 +67,42 @@
 
 .note-editor em {
   font-style: italic;
+}
+
+/* Tailwind's Preflight resets ul/ol to `list-style: none; padding: 0`, so a
+ * bulleted/numbered list looks exactly like a plain paragraph unless restyled.
+ * `list-style: revert` does NOT reliably bring back the native `type`
+ * attribute's marker style (a/A/i/I) here, so the marker type is set
+ * explicitly per `type` value instead of relying on the UA default. */
+.note-editor ul,
+.note-editor ol {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.25em 0;
+}
+
+.note-editor ol {
+  list-style-type: decimal;
+}
+
+.note-editor ol[type='a'] {
+  list-style-type: lower-alpha;
+}
+
+.note-editor ol[type='A'] {
+  list-style-type: upper-alpha;
+}
+
+.note-editor ol[type='i'] {
+  list-style-type: lower-roman;
+}
+
+.note-editor ol[type='I'] {
+  list-style-type: upper-roman;
+}
+
+.note-editor li {
+  margin: 0.15em 0;
 }
 
 .note-editor ul[data-type='taskList'] {
@@ -81,16 +144,38 @@
 
 .note-editor [data-type='details'] > button {
   flex: none;
-  width: 16px;
-  margin-top: 2px;
+  position: relative;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
   cursor: pointer;
   border: none;
   background: transparent;
   padding: 0;
-  font-size: 12px;
-  line-height: 1;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.6);
+}
+
+.note-editor [data-type='details'] > button:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+/* A CSS-drawn triangle instead of a Unicode glyph, which rendered
+ * inconsistently (looked like a dot at small sizes in some fonts) and made
+ * the toggle hard to both see and click precisely. */
+.note-editor [data-type='details'] > button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-style: solid;
+  border-width: 5px 0 5px 7px;
+  border-color: transparent transparent transparent rgba(0, 0, 0, 0.55);
+  transform: translate(-40%, -50%);
+  transition: transform 0.15s ease;
+}
+
+.note-editor [data-type='details'] > button.is-open::before {
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .note-editor [data-type='details'] > div {
@@ -100,17 +185,23 @@
 
 /* `<summary>` carries a native browser disclosure marker (a bullet/triangle)
  * even outside a real `<details>` element, since it's a bare tag selector in
- * the UA stylesheet. We render our own glyph via the toggle button instead. */
-.note-editor [data-type='detailsSummary'] {
-  display: block;
+ * the UA stylesheet. We render our own glyph via the toggle button instead.
+ * NOTE: DetailsSummary's own renderHTML does NOT add a `data-type` attribute
+ * (unlike Details/DetailsContent, which do via a custom NodeView) — targeting
+ * `[data-type='detailsSummary']` here never matched anything. Use the actual
+ * tag, scoped to our details wrapper. */
+.note-editor [data-type='details'] summary {
+  display: block !important;
   font-weight: 500;
-  list-style: none;
+  list-style: none !important;
 }
 
-.note-editor [data-type='detailsSummary']::marker,
-.note-editor [data-type='detailsSummary']::-webkit-details-marker {
-  display: none;
-  content: '';
+.note-editor [data-type='details'] summary::marker,
+.note-editor [data-type='details'] summary::-webkit-details-marker {
+  display: none !important;
+  content: none !important;
+  font-size: 0 !important;
+  width: 0 !important;
 }
 
 .note-editor [data-type='detailsContent'] {
@@ -163,20 +254,26 @@
   padding: 0;
 }
 
+/* A real 2x3 dot grid rendered from actual elements: a Unicode glyph (e.g. the
+ * braille pattern previously used) renders inconsistently across fonts and can
+ * end up looking like a single small mark instead of a grip. */
 .drag-handle-grip {
-  width: 18px;
-  height: 22px;
-  border-radius: 4px;
+  width: 22px;
+  height: 28px;
+  border-radius: 6px;
   cursor: grab;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(0, 0, 0, 0.35);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  place-items: center;
+  padding: 5px 7px;
 }
 
-.drag-handle-grip::before {
-  content: '⠿';
-  font-size: 14px;
+.drag-handle-grip span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .drag-handle-grip:hover {

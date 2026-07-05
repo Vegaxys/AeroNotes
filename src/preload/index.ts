@@ -26,6 +26,12 @@ const api = {
   setNoteColor: (id: string, color: NoteColor): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_SET_COLOR, id, color)
   },
+  setNoteTitle: (id: string, title: string): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTE_SET_TITLE, id, title)
+  },
+  reorderNotes: (orderedIds: string[]): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTES_REORDER, orderedIds)
+  },
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET),
   setSettings: (patch: Partial<AppSettings>): void => {
     ipcRenderer.send(IPC_CHANNELS.SETTINGS_SET, patch)

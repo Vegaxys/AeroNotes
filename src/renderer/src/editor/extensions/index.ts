@@ -13,6 +13,7 @@ import TableCell from '@tiptap/extension-table-cell'
 import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details'
 import { SlashCommand } from './slashCommand'
 import { LocalLink } from './localLink'
+import { AlphaOrderedList } from './alphaOrderedList'
 
 export function createNoteEditorExtensions(): AnyExtension[] {
   return [
@@ -36,13 +37,18 @@ export function createNoteEditorExtensions(): AnyExtension[] {
     TableCell,
     Details.configure({
       persist: true,
+      // Drawn via CSS (see .note-editor [data-type='details'] > button::before)
+      // rather than a Unicode glyph, which can render inconsistently (as a dot
+      // in some fonts at small sizes) and made the button hard to read/click.
       renderToggleButton: ({ element, isOpen }) => {
-        element.textContent = isOpen ? '▾' : '▸'
+        element.textContent = ''
+        element.classList.toggle('is-open', isOpen)
       }
     }),
     DetailsSummary,
     DetailsContent,
     LocalLink,
+    AlphaOrderedList,
     SlashCommand
   ]
 }

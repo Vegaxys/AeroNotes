@@ -106,6 +106,13 @@ class NotesStore {
     this.scheduleSave()
   }
 
+  setTitle(id: string, title: string): void {
+    const note = this.notes.get(id)
+    if (!note) return
+    this.notes.set(id, { ...note, title, updatedAt: Date.now() })
+    this.scheduleSave()
+  }
+
   setDetached(id: string, isDetached: boolean, windowBounds?: WindowBounds): void {
     const note = this.notes.get(id)
     if (!note) return
@@ -124,6 +131,15 @@ class NotesStore {
     const note = this.notes.get(id)
     if (!note) return
     this.notes.set(id, { ...note, windowBounds })
+    this.scheduleSave()
+  }
+
+  setDockOrder(orderedIds: string[]): void {
+    orderedIds.forEach((id, index) => {
+      const note = this.notes.get(id)
+      if (!note) return
+      this.notes.set(id, { ...note, dockIndex: index })
+    })
     this.scheduleSave()
   }
 

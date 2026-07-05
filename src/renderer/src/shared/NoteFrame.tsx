@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { NoteColor } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
 import { ColorPicker } from './ColorPicker'
@@ -14,7 +14,50 @@ interface NoteFrameProps {
   onTogglePin: () => void
   onRedock: () => void
   onColorChange: (color: NoteColor) => void
+  onTitleChange: (title: string) => void
   children: React.ReactNode
+}
+
+function EditableTitle({
+  title,
+  onTitleChange
+}: {
+  title: string
+  onTitleChange: (title: string) => void
+}): React.JSX.Element {
+  const [isEditing, setIsEditing] = useState(false)
+
+  if (isEditing) {
+    return (
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        onBlur={() => setIsEditing(false)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+        }}
+        placeholder="Sans titre"
+        spellCheck={false}
+        size={Math.max(title.length, 6)}
+        style={noDragRegion}
+        className="max-w-full truncate bg-transparent text-sm font-semibold text-black/80 outline-none placeholder:text-black/40"
+      />
+    )
+  }
+
+  // Only the word itself is clickable/editable and non-draggable; the rest of
+  // the titlebar (including the space right of a short title) stays part of
+  // the window's drag region.
+  return (
+    <span
+      onClick={() => setIsEditing(true)}
+      style={noDragRegion}
+      className="max-w-full cursor-text truncate text-sm font-semibold text-black/80"
+    >
+      {title || 'Sans titre'}
+    </span>
+  )
 }
 
 export function NoteFrame({
@@ -24,6 +67,7 @@ export function NoteFrame({
   onTogglePin,
   onRedock,
   onColorChange,
+  onTitleChange,
   children
 }: NoteFrameProps): React.JSX.Element {
   return (
@@ -32,11 +76,11 @@ export function NoteFrame({
       style={{ background: noteColorToCss(color) }}
     >
       <div
-        className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 px-3 py-2"
+        className="flex shrink-0 items-center gap-2 border-b border-black/10 px-3 py-2"
         style={dragRegion}
       >
-        <p className="truncate text-sm font-semibold text-black/80">{title || 'Sans titre'}</p>
-        <div className="flex shrink-0 items-center gap-1" style={noDragRegion}>
+        <EditableTitle title={title} onTitleChange={onTitleChange} />
+        <div className="ml-auto flex shrink-0 items-center gap-1" style={noDragRegion}>
           <ColorPicker value={color} onChange={onColorChange} />
           <button
             onClick={onTogglePin}

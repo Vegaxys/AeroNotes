@@ -9,7 +9,7 @@ export function DockSearchInput(): React.JSX.Element {
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
       placeholder="Rechercher une note..."
-      className="h-8 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-white/15 bg-white/10 px-3 text-sm text-white placeholder-white/50 outline-none focus:border-white/30"
+      className="h-8 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-white/15 bg-neutral-900/95 px-3 text-sm text-white placeholder-white/50 outline-none focus:border-white/30"
     />
   )
 }

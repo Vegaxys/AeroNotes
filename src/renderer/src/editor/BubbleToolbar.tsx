@@ -27,6 +27,8 @@ function ToolbarButton({ active, onClick, children }: ToolbarButtonProps): React
 }
 
 export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element {
+  const activeColor = editor.getAttributes('textStyle').color as string | undefined
+
   const setLink = (): void => {
     const previousUrl = editor.getAttributes('link').href as string | undefined
     const url = window.prompt('URL du lien', previousUrl ?? '')
@@ -41,7 +43,9 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element
   return (
     <BubbleMenu
       editor={editor}
-      className="flex items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl"
+      pluginKey="textBubbleMenu"
+      options={{ flip: true, shift: { padding: 8 }, offset: 8 }}
+      className="flex max-w-[260px] flex-wrap items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl"
     >
       <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
         B
@@ -75,14 +79,18 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element
         <button
           key={color}
           onClick={() => editor.chain().focus().setColor(color).run()}
-          className="h-5 w-5 rounded-full border border-white/20"
+          className={`h-5 w-5 rounded-full border border-white/20 ${
+            activeColor === color ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
+          }`}
           style={{ background: color }}
           aria-label={`Couleur ${color}`}
         />
       ))}
       <button
         onClick={() => editor.chain().focus().unsetColor().run()}
-        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 text-[10px] text-white/70"
+        className={`flex h-5 w-5 items-center justify-center rounded-full border border-white/20 text-[10px] text-white/70 ${
+          !activeColor ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
+        }`}
         aria-label="Retirer la couleur"
       >
         ×
