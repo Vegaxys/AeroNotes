@@ -1,6 +1,11 @@
 import { useNotesStore } from '@renderer/state/useNotesStore'
 
-export function DockSearchInput(): React.JSX.Element {
+interface DockSearchInputProps {
+  placeholder: string
+}
+
+/** Borderless: it lives inside the DockHeader bar, which carries the chrome. */
+export function DockSearchInput({ placeholder }: DockSearchInputProps): React.JSX.Element {
   const searchQuery = useNotesStore((s) => s.searchQuery)
   const setSearchQuery = useNotesStore((s) => s.setSearchQuery)
 
@@ -8,8 +13,9 @@ export function DockSearchInput(): React.JSX.Element {
     <input
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
-      placeholder="Rechercher une note..."
-      className="h-8 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-white/15 bg-neutral-900/95 px-3 text-sm text-white placeholder-white/50 outline-none focus:border-white/30"
+      placeholder={placeholder}
+      spellCheck={false}
+      className="h-full min-w-0 flex-1 bg-transparent px-1.5 text-sm text-white placeholder-white/40 outline-none"
     />
   )
 }

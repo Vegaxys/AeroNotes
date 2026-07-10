@@ -1,14 +1,39 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { JSONContent } from '@tiptap/core'
 import type { NoteColor } from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
+import { t } from '@shared/i18n'
 import { notesStore } from '../store/notesStore'
 import {
+  closeAllNoteWindows,
+  destroyNoteWindow,
   detachNote,
   focusNote,
   redockNote,
   setNoteAlwaysOnTop
 } from '../windows/noteWindowRegistry'
+
+/** Native confirmation dialog; resolves true when the user confirms the deletion. */
+async function confirmDeletion(
+  sender: Electron.WebContents,
+  title: string,
+  message: string
+): Promise<boolean> {
+  const window = BrowserWindow.fromWebContents(sender)
+  const options: Electron.MessageBoxOptions = {
+    type: 'warning',
+    buttons: [t('confirm.delete'), t('confirm.cancel')],
+    defaultId: 1,
+    cancelId: 1,
+    title,
+    message,
+    detail: t('confirm.irreversible')
+  }
+  const result = window
+    ? await dialog.showMessageBox(window, options)
+    : await dialog.showMessageBox(options)
+  return result.response === 0
+}
 
 function broadcastNotes(): void {
   const notes = notesStore.getAll()
@@ -17,13 +42,87 @@ function broadcastNotes(): void {
   })
 }
 
+function broadcastFolders(): void {
+  const folders = notesStore.getFolders()
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.webContents.send(IPC_CHANNELS.FOLDERS_CHANGED, folders)
+  })
+}
+
 export function registerNotesHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.NOTES_GET_ALL, () => notesStore.getAll())
 
-  ipcMain.handle(IPC_CHANNELS.NOTE_ADD, () => {
-    const note = notesStore.add()
+  ipcMain.handle(IPC_CHANNELS.NOTE_ADD, (_event, folderId: string) => {
+    const note = notesStore.add(folderId)
     broadcastNotes()
     return note
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FOLDERS_GET_ALL, () => notesStore.getFolders())
+
+  ipcMain.handle(IPC_CHANNELS.FOLDER_ADD, (_event, name: string) => {
+    const folder = notesStore.addFolder(name)
+    broadcastFolders()
+    return folder
+  })
+
+  ipcMain.on(IPC_CHANNELS.FOLDER_RENAME, (_event, id: string, name: string) => {
+    notesStore.renameFolder(id, name)
+    broadcastFolders()
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_WINDOWS_CLOSE_ALL, () => {
+    closeAllNoteWindows(broadcastNotes)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.NOTE_DELETE, async (event, id: string): Promise<boolean> => {
+    const note = notesStore.getById(id)
+    if (!note) return false
+    const confirmed = await confirmDeletion(
+      event.sender,
+      t('confirm.deleteNote.title'),
+      t('confirm.deleteNote.message', { title: note.title || t('note.untitled') })
+    )
+    if (!confirmed) return false
+    destroyNoteWindow(id)
+    notesStore.deleteNote(id)
+    broadcastNotes()
+    return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.NOTE_DUPLICATE, (_event, id: string) => {
+    const copy = notesStore.duplicateNote(id)
+    broadcastNotes()
+    return copy
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_MOVE_TO_FOLDER, (_event, id: string, folderId: string) => {
+    // A detached window for this note would show a note the dock no longer
+    // lists in the current folder — close it first.
+    const note = notesStore.getById(id)
+    if (note?.isDetached) {
+      destroyNoteWindow(id)
+      notesStore.setDetached(id, false)
+    }
+    notesStore.moveNoteToFolder(id, folderId)
+    broadcastNotes()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FOLDER_DELETE, async (event, id: string): Promise<boolean> => {
+    const folder = notesStore.getFolders().find((f) => f.id === id)
+    if (!folder) return false
+    const count = notesStore.countNotesInFolder(id)
+    const message =
+      count > 0
+        ? t('confirm.deleteFolder.withNotes', { name: folder.name, count })
+        : t('confirm.deleteFolder.message', { name: folder.name })
+    const confirmed = await confirmDeletion(event.sender, t('confirm.deleteFolder.title'), message)
+    if (!confirmed) return false
+    const deletedNoteIds = notesStore.deleteFolder(id)
+    deletedNoteIds.forEach(destroyNoteWindow)
+    broadcastNotes()
+    broadcastFolders()
+    return true
   })
 
   ipcMain.on(IPC_CHANNELS.NOTE_UPDATE_CONTENT, (_event, id: string, content: JSONContent) => {

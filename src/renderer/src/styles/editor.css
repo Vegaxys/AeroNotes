@@ -69,6 +69,18 @@
   font-style: italic;
 }
 
+.note-editor s {
+  text-decoration: line-through;
+}
+
+/* Multicolor highlight: the actual color arrives inline via data-color, this
+ * is just the shape + a fallback tint. */
+.note-editor mark {
+  background-color: #fef08a;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
 /* Tailwind's Preflight resets ul/ol to `list-style: none; padding: 0`, so a
  * bulleted/numbered list looks exactly like a plain paragraph unless restyled.
  * `list-style: revert` does NOT reliably bring back the native `type`
@@ -214,9 +226,57 @@
   cursor: pointer;
 }
 
+/* Kind-specific icon in front of each link: folder/file for local links, a
+ * small blue wireframe globe for web links. Inline SVG data URIs (lucide
+ * outlines) so no image assets are needed. */
+.note-editor .local-link::before,
+.note-editor a::before {
+  content: '';
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.note-editor .local-link[data-kind='folder']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'/%3E%3C/svg%3E");
+}
+
+.note-editor .local-link[data-kind='file']::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3C/svg%3E");
+}
+
+.note-editor a::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20'/%3E%3Cpath d='M2 12h20'/%3E%3C/svg%3E");
+}
+
+/* Preflight collapses <hr> to a bare 1px border. Rebuild it with a tall
+ * padded hit area so hovering it (to grab the block drag handle) doesn't
+ * require pixel-perfect aim — the visible line is only the content box
+ * (height minus vertical padding), the rest is invisible grab padding. */
+.note-editor hr {
+  border: none;
+  height: 30px;
+  padding: 14px 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.25);
+  background-clip: content-box;
+}
+
+.note-editor hr.ProseMirror-selectednode {
+  background-color: var(--color-accent, #7c9dff);
+}
+
 .note-editor table {
   border-collapse: collapse;
-  margin: 8px 0;
+  /* Extra bottom room for TableControls' append-row "+" button (16px tall,
+   * 2px below the table), which is absolutely positioned and would otherwise
+   * overlap the next block. */
+  margin: 8px 0 26px;
 }
 
 .note-editor table td,
@@ -310,13 +370,31 @@
 /* Fade shown behind the block the drag handle currently targets. box-shadow
  * (not padding/margin) extends the highlight a bit beyond plain text's tight
  * bounds without affecting layout — a bare <p>'s own box has no border/padding
- * to make a background alone read clearly, unlike table/details blocks. */
+ * to make a background alone read clearly, unlike table/details blocks.
+ * background-color, NOT the `background:` shorthand: the shorthand resets
+ * background-clip, which wiped the <hr>'s content-box line on hover. */
 .note-editor .block-hover-target {
-  background: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.14);
   border-radius: 4px;
+}
+
+/* An <hr> paints its line via its own background; on hover just darken the
+ * line — the box-shadow ring around its mostly-invisible padded box reads as
+ * a floating halo, not a highlight. */
+.note-editor hr.block-hover-target {
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 .note-editor .block-drag-source {
   opacity: 0.35;
+}
+
+/* Block selected via a click on its drag grip (NodeSelection) — visibly
+ * marked so it's clear what Backspace/Delete will remove. */
+.note-editor .ProseMirror-selectednode {
+  outline: 2px solid var(--color-accent, #7c9dff);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

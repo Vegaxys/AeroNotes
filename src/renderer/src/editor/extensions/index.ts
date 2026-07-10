@@ -11,11 +11,15 @@ import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details'
+import Highlight from '@tiptap/extension-highlight'
+import { t } from '@shared/i18n'
 import { SlashCommand } from './slashCommand'
 import { LocalLink } from './localLink'
+import { WebLinkClick } from './webLinkClick'
+import { HighlightClick, type HighlightClickOptions } from './highlightClick'
 import { AlphaOrderedList } from './alphaOrderedList'
 
-export function createNoteEditorExtensions(): AnyExtension[] {
+export function createNoteEditorExtensions(options: HighlightClickOptions = {}): AnyExtension[] {
   return [
     StarterKit.configure({
       link: {
@@ -26,7 +30,7 @@ export function createNoteEditorExtensions(): AnyExtension[] {
     TextStyle,
     Color,
     Placeholder.configure({
-      placeholder: "Ecrire quelque chose... ('/' pour les commandes)"
+      placeholder: t('editor.placeholder')
     }),
     TaskList,
     TaskItem.configure({ nested: true }),
@@ -47,7 +51,10 @@ export function createNoteEditorExtensions(): AnyExtension[] {
     }),
     DetailsSummary,
     DetailsContent,
+    Highlight.configure({ multicolor: true }),
+    HighlightClick.configure({ onHighlightClick: options.onHighlightClick }),
     LocalLink,
+    WebLinkClick,
     AlphaOrderedList,
     SlashCommand
   ]

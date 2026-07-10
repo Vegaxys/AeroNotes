@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import type { NoteColor } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
+import { t } from '@shared/i18n'
 import { ColorPicker } from './ColorPicker'
 
 /** `WebkitAppRegion` drives native window dragging in Electron but isn't in DOM's CSSProperties. */
@@ -13,6 +14,7 @@ interface NoteFrameProps {
   isPinned: boolean
   onTogglePin: () => void
   onRedock: () => void
+  onDelete: () => void
   onColorChange: (color: NoteColor) => void
   onTitleChange: (title: string) => void
   children: React.ReactNode
@@ -37,7 +39,7 @@ function EditableTitle({
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur()
         }}
-        placeholder="Sans titre"
+        placeholder={t('note.untitled')}
         spellCheck={false}
         size={Math.max(title.length, 6)}
         style={noDragRegion}
@@ -55,7 +57,7 @@ function EditableTitle({
       style={noDragRegion}
       className="max-w-full cursor-text truncate text-sm font-semibold text-black/80"
     >
-      {title || 'Sans titre'}
+      {title || t('note.untitled')}
     </span>
   )
 }
@@ -66,6 +68,7 @@ export function NoteFrame({
   isPinned,
   onTogglePin,
   onRedock,
+  onDelete,
   onColorChange,
   onTitleChange,
   children
@@ -87,16 +90,24 @@ export function NoteFrame({
             className={`flex h-6 w-6 items-center justify-center rounded-full text-xs hover:bg-black/10 ${
               isPinned ? 'text-black/90' : 'text-black/40'
             }`}
-            aria-label={isPinned ? 'Ne plus epingler' : 'Epingler au premier plan'}
-            title={isPinned ? 'Ne plus epingler' : 'Epingler au premier plan'}
+            aria-label={isPinned ? t('note.unpin') : t('note.pin')}
+            title={isPinned ? t('note.unpin') : t('note.pin')}
           >
             📌
           </button>
           <button
+            onClick={onDelete}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-xs text-black/40 hover:bg-black/10 hover:text-red-700"
+            aria-label={t('note.delete')}
+            title={t('note.delete')}
+          >
+            🗑
+          </button>
+          <button
             onClick={onRedock}
             className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-black/50 hover:bg-black/10"
-            aria-label="Ranger dans le dock"
-            title="Ranger dans le dock"
+            aria-label={t('note.redock')}
+            title={t('note.redock')}
           >
             ✕
           </button>

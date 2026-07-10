@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
+import { Node as PMNode } from '@tiptap/pm/model'
+import { NodeSelection } from '@tiptap/pm/state'
+import type { BlockTransferPayload } from '@shared/types'
+import { t } from '@shared/i18n'
+
+/** Below this cursor travel (px), a grip mousedown+mouseup counts as a click (select the block). */
+const DRAG_THRESHOLD_PX = 4
 
 interface BlockDragHandleProps {
   editor: Editor
   containerRef: React.RefObject<HTMLElement | null>
+  noteId: string
 }
 
 interface Rect {
@@ -97,7 +105,16 @@ function moveBlock(editor: Editor, sourcePos: number, sourceSize: number, target
   view.focus()
 }
 
-export function BlockDragHandle({ editor, containerRef }: BlockDragHandleProps): React.JSX.Element | null {
+function isInsideThisWindow(event: MouseEvent): boolean {
+  return (
+    event.clientX >= 0 &&
+    event.clientX <= window.innerWidth &&
+    event.clientY >= 0 &&
+    event.clientY <= window.innerHeight
+  )
+}
+
+export function BlockDragHandle({ editor, containerRef, noteId }: BlockDragHandleProps): React.JSX.Element | null {
   const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; rect: Rect } | null>(null)
   const [dropIndicator, setDropIndicator] = useState<Boundary | null>(null)
   const isDraggingRef = useRef(false)
@@ -141,6 +158,57 @@ export function BlockDragHandle({ editor, containerRef }: BlockDragHandleProps):
     return () => dom.classList.remove('block-hover-target')
   }, [editor, hoveredPos])
 
+  // Target side of a cross-window drag: another note's window is dragging a
+  // block over/into this one. Coordinates arrive relative to this window's
+  // content area, i.e. directly comparable to clientX/clientY.
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    function boundaryAtWindowY(y: number): Boundary | null {
+      const containerBox = container!.getBoundingClientRect()
+      const relativeY = y - containerBox.top + container!.scrollTop
+      return findNearestBoundary(computeBoundaries(editor, container!), relativeY)
+    }
+
+    const unsubscribeOver = window.aeronotes.onBlockDragOver((_x, y) => {
+      setDropIndicator(boundaryAtWindowY(y))
+    })
+    const unsubscribeLeave = window.aeronotes.onBlockDragLeave(() => setDropIndicator(null))
+    const unsubscribeDrop = window.aeronotes.onBlockDrop((_x, y, payload) => {
+      setDropIndicator(null)
+      const target = boundaryAtWindowY(y)
+      if (!target) return
+      let node: PMNode
+      try {
+        node = PMNode.fromJSON(editor.schema, payload.content)
+      } catch {
+        return
+      }
+      editor.view.dispatch(editor.state.tr.insert(target.pos, node))
+      editor.view.focus()
+      window.aeronotes.notifyBlockTransferred(payload.sourceNoteId, payload.sourcePos, payload.sourceSize)
+    })
+
+    return () => {
+      unsubscribeOver()
+      unsubscribeLeave()
+      unsubscribeDrop()
+    }
+  }, [editor, containerRef])
+
+  // Source side of a completed cross-window transfer: the target window
+  // confirmed the insertion (via main), so delete the original block here.
+  useEffect(() => {
+    return window.aeronotes.onBlockRemoveRequested((pos, size) => {
+      const node = editor.state.doc.nodeAt(pos)
+      // Only delete if the doc still matches what was dragged — if it changed
+      // mid-drag, leaving a duplicate behind beats deleting the wrong block.
+      if (!node || node.nodeSize !== size) return
+      editor.view.dispatch(editor.state.tr.delete(pos, pos + size))
+    })
+  }, [editor])
+
   const startDrag = (event: React.MouseEvent): void => {
     const container = containerRef.current
     const block = hoveredBlock
@@ -150,30 +218,83 @@ export function BlockDragHandle({ editor, containerRef }: BlockDragHandleProps):
     const node = editor.state.doc.nodeAt(block.pos)
     if (!node) return
 
-    isDraggingRef.current = true
     const sourcePos = block.pos
     const sourceSize = node.nodeSize
+    // Serialized up front: the payload must describe the block as it was when
+    // the drag started, whatever happens to the doc afterwards.
+    const payload: BlockTransferPayload = {
+      sourceNoteId: noteId,
+      sourcePos,
+      sourceSize,
+      content: node.toJSON()
+    }
     const sourceDom = editor.view.nodeDOM(sourcePos)
-    if (sourceDom instanceof HTMLElement) sourceDom.classList.add('block-drag-source')
 
+    const startX = event.clientX
+    const startY = event.clientY
+    let dragStarted = false
     let latestTarget: Boundary | null = null
+    let wasOutsideWindow = false
 
     function handleMove(moveEvent: MouseEvent): void {
-      const boundaries = computeBoundaries(editor, container!)
-      const containerBox = container!.getBoundingClientRect()
-      const y = moveEvent.clientY - containerBox.top + container!.scrollTop
-      latestTarget = findNearestBoundary(boundaries, y)
-      setDropIndicator(latestTarget)
+      // A press only becomes a drag past a small travel threshold; a plain
+      // click instead selects the block (see handleUp).
+      if (!dragStarted) {
+        if (
+          Math.abs(moveEvent.clientX - startX) < DRAG_THRESHOLD_PX &&
+          Math.abs(moveEvent.clientY - startY) < DRAG_THRESHOLD_PX
+        ) {
+          return
+        }
+        dragStarted = true
+        isDraggingRef.current = true
+        if (sourceDom instanceof HTMLElement) sourceDom.classList.add('block-drag-source')
+      }
+
+      // While the button is held, mouse capture keeps these events coming even
+      // outside the window — that's what lets a drag reach another post-it.
+      if (isInsideThisWindow(moveEvent)) {
+        if (wasOutsideWindow) {
+          wasOutsideWindow = false
+          window.aeronotes.blockDragCancel(noteId)
+        }
+        const boundaries = computeBoundaries(editor, container!)
+        const containerBox = container!.getBoundingClientRect()
+        const y = moveEvent.clientY - containerBox.top + container!.scrollTop
+        latestTarget = findNearestBoundary(boundaries, y)
+        setDropIndicator(latestTarget)
+      } else {
+        wasOutsideWindow = true
+        if (latestTarget) {
+          latestTarget = null
+          setDropIndicator(null)
+        }
+        window.aeronotes.blockDragMove(noteId, moveEvent.screenX, moveEvent.screenY)
+      }
     }
 
-    function handleUp(): void {
+    function handleUp(upEvent: MouseEvent): void {
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
       isDraggingRef.current = false
       if (sourceDom instanceof HTMLElement) sourceDom.classList.remove('block-drag-source')
 
-      if (latestTarget) {
-        moveBlock(editor, sourcePos, sourceSize, latestTarget.pos)
+      if (!dragStarted) {
+        // Plain click: select the whole block (deletable with Backspace/Delete).
+        const { state, view } = editor
+        view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, sourcePos)))
+        view.focus()
+        return
+      }
+
+      if (isInsideThisWindow(upEvent)) {
+        if (latestTarget) {
+          moveBlock(editor, sourcePos, sourceSize, latestTarget.pos)
+        }
+      } else {
+        // Released over (maybe) another note window: main figures out which
+        // one and forwards the payload; deletion happens on its confirmation.
+        window.aeronotes.blockDragDrop(upEvent.screenX, upEvent.screenY, payload)
       }
       setDropIndicator(null)
       setHoveredBlock(null)
@@ -190,8 +311,8 @@ export function BlockDragHandle({ editor, containerRef }: BlockDragHandleProps):
           onMouseDown={startDrag}
           className="block-drag-handle-grip"
           style={{ position: 'absolute', top: hoveredBlock.rect.top }}
-          aria-label="Deplacer ce bloc"
-          title="Glisser pour reordonner"
+          aria-label={t('editor.moveBlock')}
+          title={t('editor.moveBlockTitle')}
         >
           <span />
           <span />

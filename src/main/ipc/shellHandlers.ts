@@ -13,6 +13,13 @@ export function registerShellHandlers(): void {
     }
   )
 
+  ipcMain.handle(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, async (_event, url: string) => {
+    // Autolinked text can lack a protocol ("www.example.com"); default to https.
+    const normalized = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`
+    if (!/^(https?|mailto):/i.test(normalized)) return
+    await shell.openExternal(normalized)
+  })
+
   ipcMain.handle(
     IPC_CHANNELS.DIALOG_PICK_PATH,
     async (event, kind: 'file' | 'folder'): Promise<string | null> => {

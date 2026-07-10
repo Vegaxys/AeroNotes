@@ -1,5 +1,7 @@
 import { join } from 'path'
 import { app, BrowserWindow, Menu, Tray, globalShortcut, nativeImage } from 'electron'
+import { t } from '@shared/i18n'
+import { openSettingsWindow } from './windows/settingsWindow'
 
 const TOGGLE_SHORTCUT = 'CommandOrControl+Shift+N'
 
@@ -26,9 +28,10 @@ export function createTray(getOverlayWindow: () => BrowserWindow | null): Tray {
 
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Afficher / masquer le dock', click: toggleOverlay },
+      { label: t('tray.toggleDock'), click: toggleOverlay },
+      { label: t('tray.settings'), click: () => openSettingsWindow() },
       { type: 'separator' },
-      { label: 'Quitter', click: () => app.quit() }
+      { label: t('tray.quit'), click: () => app.quit() }
     ])
   )
 

@@ -48,7 +48,13 @@ export function SlashCommandList({ items, command, ref }: SlashCommandListProps)
   }
 
   return (
-    <div className="w-56 overflow-hidden rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl">
+    // data-mouse-live: in the overlay window this popup (appended to body) can
+    // stick out past the dock's rect; without the marker the click-through
+    // hit-test would hand those pixels back to the desktop.
+    <div
+      data-mouse-live=""
+      className="w-56 overflow-hidden rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl"
+    >
       {items.map((item, index) => (
         <button
           key={item.title}

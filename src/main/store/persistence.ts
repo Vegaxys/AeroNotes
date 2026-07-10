@@ -1,20 +1,25 @@
 import Store from 'electron-store'
-import type { AppSettings, Note } from '@shared/types'
+import type { AppSettings, Folder, Note } from '@shared/types'
 
 interface PersistedSchema {
   notes: Record<string, Note>
+  folders: Record<string, Folder>
   settings: AppSettings
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   dockSide: 'right',
   dockCollapsed: false,
-  dockExpandedWidth: 300
+  // Wide enough for comfortable in-dock editing.
+  dockExpandedWidth: 380,
+  launchAtStartup: false,
+  lastOpenFolderId: null,
+  notesExpanded: true
 }
 
 const diskStore = new Store<PersistedSchema>({
   name: 'aeronotes',
-  defaults: { notes: {}, settings: DEFAULT_SETTINGS }
+  defaults: { notes: {}, folders: {}, settings: DEFAULT_SETTINGS }
 })
 
 export function loadNotes(): Note[] {
@@ -29,8 +34,26 @@ export function saveNotes(notes: Note[]): void {
   diskStore.set('notes', asRecord)
 }
 
+export function loadFolders(): Folder[] {
+  return Object.values(diskStore.get('folders'))
+}
+
+export function saveFolders(folders: Folder[]): void {
+  const asRecord: Record<string, Folder> = {}
+  folders.forEach((folder) => {
+    asRecord[folder.id] = folder
+  })
+  diskStore.set('folders', asRecord)
+}
+
 export function loadSettings(): AppSettings {
-  return diskStore.get('settings')
+  const settings = diskStore.get('settings')
+  // No UI ever let the user pick a width, so a persisted pre-folders 300 is
+  // just the old default — widen it for in-dock editing.
+  if (settings.dockExpandedWidth < DEFAULT_SETTINGS.dockExpandedWidth) {
+    settings.dockExpandedWidth = DEFAULT_SETTINGS.dockExpandedWidth
+  }
+  return settings
 }
 
 export function saveSettings(settings: AppSettings): void {

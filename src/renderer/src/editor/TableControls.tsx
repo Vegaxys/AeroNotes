@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/react'
+import { t } from '@shared/i18n'
 import { Selection } from '@tiptap/pm/state'
 import {
   TableMap,
@@ -137,8 +138,8 @@ export function TableControls({ editor, containerRef }: TableControlsProps): Rea
             onClick={() => appendColumn(editor)}
             className="absolute z-10 flex w-4 items-center justify-center rounded bg-black/10 text-sm text-black/50 hover:bg-black/25"
             style={{ top: rect.top, left: rect.left + rect.width + 2, height: rect.height }}
-            aria-label="Ajouter une colonne"
-            title="Ajouter une colonne"
+            aria-label={t('table.addColumn')}
+            title={t('table.addColumn')}
           >
             +
           </button>
@@ -146,8 +147,8 @@ export function TableControls({ editor, containerRef }: TableControlsProps): Rea
             onClick={() => appendRow(editor)}
             className="absolute z-10 flex h-4 items-center justify-center rounded bg-black/10 text-sm text-black/50 hover:bg-black/25"
             style={{ top: rect.top + rect.height + 2, left: rect.left, width: rect.width }}
-            aria-label="Ajouter une ligne"
-            title="Ajouter une ligne"
+            aria-label={t('table.addRow')}
+            title={t('table.addRow')}
           >
             +
           </button>
@@ -162,34 +163,24 @@ export function TableControls({ editor, containerRef }: TableControlsProps): Rea
           <button
             className="rounded px-2 py-1.5 text-left hover:bg-black/10"
             onClick={() => editor.chain().focus().addColumnAfter().run()}
-          >
-            Ajouter une colonne
-          </button>
+          >{t('table.addColumn')}</button>
           <button
             className="rounded px-2 py-1.5 text-left hover:bg-black/10"
             onClick={() => editor.chain().focus().deleteColumn().run()}
-          >
-            Supprimer la colonne
-          </button>
+          >{t('table.deleteColumn')}</button>
           <button
             className="rounded px-2 py-1.5 text-left hover:bg-black/10"
             onClick={() => editor.chain().focus().addRowAfter().run()}
-          >
-            Ajouter une ligne
-          </button>
+          >{t('table.addRow')}</button>
           <button
             className="rounded px-2 py-1.5 text-left hover:bg-black/10"
             onClick={() => editor.chain().focus().deleteRow().run()}
-          >
-            Supprimer la ligne
-          </button>
+          >{t('table.deleteRow')}</button>
           <span className="my-0.5 h-px bg-black/10" />
           <button
             className="rounded px-2 py-1.5 text-left text-red-600 hover:bg-black/10"
             onClick={() => editor.chain().focus().deleteTable().run()}
-          >
-            Supprimer le tableau
-          </button>
+          >{t('table.deleteTable')}</button>
         </div>
       )}
     </>

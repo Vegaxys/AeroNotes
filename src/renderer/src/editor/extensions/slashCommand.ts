@@ -3,7 +3,7 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import tippy, { type Instance as TippyInstance } from 'tippy.js'
 import { SlashCommandList, type SlashCommandListHandle } from './SlashCommandList'
-import { SLASH_COMMAND_ITEMS, type SlashCommandItem } from './slashCommandItems'
+import { getSlashCommandItems, type SlashCommandItem } from './slashCommandItems'
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
@@ -15,9 +15,9 @@ export const SlashCommand = Extension.create({
         char: '/',
         startOfLine: false,
         items: ({ query }) =>
-          SLASH_COMMAND_ITEMS.filter((item) =>
-            item.title.toLowerCase().includes(query.toLowerCase())
-          ).slice(0, 10),
+          getSlashCommandItems()
+            .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 10),
         command: ({ editor, range, props }) => {
           props.command({ editor, range })
         },

@@ -1,11 +1,14 @@
 import { app, BrowserWindow, globalShortcut } from 'electron'
+import { registerBlockHandlers } from './ipc/blockHandlers'
 import { registerImageHandlers } from './ipc/imageHandlers'
 import { registerNotesHandlers } from './ipc/notesHandlers'
 import { registerOverlayHandlers } from './ipc/overlayHandlers'
 import { registerSettingsHandlers } from './ipc/settingsHandlers'
 import { registerShellHandlers } from './ipc/shellHandlers'
 import { registerImageProtocol } from './protocols/imageProtocol'
+import { applyLaunchAtStartup } from './startup'
 import { notesStore } from './store/notesStore'
+import { settingsStore } from './store/settingsStore'
 import { createTray } from './tray'
 import { createOverlayWindow } from './windows/overlayWindow'
 
@@ -19,6 +22,10 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerShellHandlers()
   registerImageHandlers()
+  registerBlockHandlers()
+  // Re-assert the login item on every launch so the registry entry tracks the
+  // persisted setting even across reinstalls or manual registry cleanups.
+  applyLaunchAtStartup(Boolean(settingsStore.get().launchAtStartup))
   overlayWindow = createOverlayWindow()
   tray = createTray(() => overlayWindow)
 

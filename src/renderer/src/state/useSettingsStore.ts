@@ -5,8 +5,10 @@ interface SettingsState {
   dockSide: DockSide
   dockCollapsed: boolean
   dockExpandedWidth: number
+  notesExpanded: boolean
   toggleDockSide: () => void
   toggleDockCollapsed: () => void
+  toggleNotesExpanded: () => void
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => {
@@ -16,13 +18,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
   return {
     dockSide: 'right',
     dockCollapsed: false,
-    dockExpandedWidth: 300,
+    dockExpandedWidth: 380,
+    notesExpanded: true,
     toggleDockSide: () => {
       const dockSide: DockSide = get().dockSide === 'right' ? 'left' : 'right'
       window.aeronotes.setSettings({ dockSide })
     },
     toggleDockCollapsed: () => {
       window.aeronotes.setSettings({ dockCollapsed: !get().dockCollapsed })
+    },
+    toggleNotesExpanded: () => {
+      window.aeronotes.setSettings({ notesExpanded: !get().notesExpanded })
     }
   }
 })

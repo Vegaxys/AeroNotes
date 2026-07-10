@@ -24,8 +24,18 @@ export const LocalLink = Mark.create({
 
   addAttributes() {
     return {
-      path: { default: null },
-      kind: { default: 'file' }
+      path: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-path'),
+        renderHTML: (attrs) => ({ 'data-path': attrs.path })
+      },
+      kind: {
+        default: 'file',
+        // Rendered as data-kind so the CSS can show a folder vs file icon
+        // (see .local-link[data-kind=...] in editor.css).
+        parseHTML: (element) => element.getAttribute('data-kind'),
+        renderHTML: (attrs) => ({ 'data-kind': attrs.kind })
+      }
     }
   },
 
