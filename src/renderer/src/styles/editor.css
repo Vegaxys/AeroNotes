@@ -76,7 +76,7 @@
 /* Multicolor highlight: the actual color arrives inline via data-color, this
  * is just the shape + a fallback tint. */
 .note-editor mark {
-  background-color: #fef08a;
+  background-color: #facc15;
   border-radius: 3px;
   padding: 0 1px;
 }
