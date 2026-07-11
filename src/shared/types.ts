@@ -1,4 +1,5 @@
 import type { JSONContent } from '@tiptap/core'
+import type { LocalePreference } from './i18n'
 
 export interface NoteColor {
   type: 'solid' | 'gradient'
@@ -57,4 +58,6 @@ export interface AppSettings {
   lastOpenFolderId?: string | null
   /** false = dock cards are collapsed to title + 3 preview lines, not editable. */
   notesExpanded?: boolean
+  /** UI language: an explicit locale, or 'system' to follow the OS. */
+  locale?: LocalePreference
 }

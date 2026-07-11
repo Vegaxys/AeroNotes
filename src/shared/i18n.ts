@@ -120,6 +120,8 @@ const en = {
   'settings.close': 'Close',
   'settings.general': 'General',
   'settings.launchAtStartup': 'Launch AeroNotes at Windows startup',
+  'settings.language': 'Language',
+  'settings.language.system': 'System (auto)',
   'settings.globalShortcuts': 'Global shortcuts',
   'settings.markdownShortcuts': 'Markdown shortcuts (inside a note)',
   'settings.shortcut.toggleDock': 'Show / hide the dock',
@@ -142,13 +144,142 @@ const en = {
 
 export type TranslationKey = keyof typeof en
 export type Locale = 'en' | 'fr'
+/** What the user picks in settings: an explicit locale, or follow the OS. */
+export type LocalePreference = 'system' | Locale
 
-const translations: Record<Locale, Partial<Record<TranslationKey, string>>> = {
-  en,
-  // French dictionary intentionally empty for now — the app ships in English;
-  // fill this in (and persist a `locale` setting) to localize.
-  fr: {}
+const fr: Record<TranslationKey, string> = {
+  // Dock chrome
+  'dock.expand': 'Déplier le dock',
+  'dock.collapse': 'Replier le dock',
+  'dock.switchSide': 'Changer le côté du dock',
+  'dock.switchSideTitle': 'Placer le dock au bord gauche ou droit',
+  'dock.backToFolders': 'Retour aux dossiers',
+  'dock.addNote': 'Ajouter une note',
+  'dock.addFolder': 'Ajouter un dossier',
+  'dock.searchFolders': 'Rechercher un dossier...',
+  'dock.searchIn': 'Rechercher dans {name}...',
+  'dock.searchInFallback': 'Rechercher une note...',
+
+  // Folder list
+  'folder.defaultName': 'Mes notes',
+  'folder.newName': 'Nouveau dossier',
+  'folder.noteCount.one': '{count} note',
+  'folder.noteCount.many': '{count} notes',
+  'folder.empty': 'Aucun dossier — créez-en un avec +',
+  'folder.notFound': 'Aucun dossier trouvé',
+  'folder.rename': 'Renommer le dossier',
+  'folder.delete': 'Supprimer le dossier',
+
+  // Note list / cards
+  'note.untitled': 'Sans titre',
+  'note.defaultTitle': 'Nouvelle note',
+  'note.notFound': 'Aucune note trouvée',
+  'note.open': 'ouverte',
+  'note.clickToRename': 'Cliquer pour renommer',
+  'note.detach': 'Détacher en post-it',
+  'note.delete': 'Supprimer la note',
+  'note.rename': 'Renommer',
+  'note.moveToFolder': 'Déplacer vers un dossier',
+  'note.duplicate': 'Dupliquer la note',
+  'note.copySuffix': '(copie)',
+  'note.pin': 'Épingler au premier plan',
+  'note.unpin': 'Ne plus épingler',
+  'note.redock': 'Ranger dans le dock',
+  'note.changeColor': 'Changer la couleur',
+
+  // Delete confirmations (native dialogs)
+  'confirm.delete': 'Supprimer',
+  'confirm.cancel': 'Annuler',
+  'confirm.deleteNote.title': 'Supprimer la note',
+  'confirm.deleteNote.message': 'Supprimer « {title} » ?',
+  'confirm.deleteFolder.title': 'Supprimer le dossier',
+  'confirm.deleteFolder.message': 'Supprimer le dossier « {name} » ?',
+  'confirm.deleteFolder.withNotes': 'Supprimer le dossier « {name} » et ses {count} note(s) ?',
+  'confirm.irreversible': 'Cette action est irréversible.',
+
+  // Color picker
+  'color.custom': 'Couleur personnalisée',
+  'color.customGradient': 'Dégradé personnalisé',
+  'color.apply': 'Appliquer',
+  'color.gradientFrom': 'Couleur de début du dégradé',
+  'color.gradientTo': 'Couleur de fin du dégradé',
+  'color.gradientAngle': 'Angle du dégradé',
+  'color.preset': 'Couleur {index}',
+
+  // Editor
+  'editor.placeholder': 'Écrire quelque chose... (« / » pour les commandes)',
+  'editor.moveBlock': 'Déplacer ce bloc',
+  'editor.moveBlockTitle':
+    'Glisser pour réordonner (ou vers un autre post-it) — cliquer pour sélectionner le bloc',
+  'editor.highlight': 'Surligner en {color}',
+  'editor.removeHighlight': 'Retirer le surlignage',
+  'editor.textColor': 'Couleur du texte {color}',
+  'editor.removeColor': 'Retirer la couleur',
+  'editor.linkToFile': 'Lien vers un fichier',
+  'editor.linkToFolder': 'Lien vers un dossier',
+  'editor.webLink': 'Lien web',
+  'editor.removeLink': 'Retirer le lien',
+
+  // Table controls
+  'table.addColumn': 'Ajouter une colonne',
+  'table.deleteColumn': 'Supprimer la colonne',
+  'table.addRow': 'Ajouter une ligne',
+  'table.deleteRow': 'Supprimer la ligne',
+  'table.deleteTable': 'Supprimer le tableau',
+
+  // Slash commands
+  'slash.heading1': 'Titre 1',
+  'slash.heading2': 'Titre 2',
+  'slash.bulletList': 'Liste à puces',
+  'slash.numberedList': 'Liste numérotée',
+  'slash.checklist': 'Checklist',
+  'slash.toggle': 'Bloc repliable',
+  'slash.table': 'Tableau',
+  'slash.image': 'Image',
+  'slash.fileLink': 'Lien vers un fichier',
+  'slash.folderLink': 'Lien vers un dossier',
+  'slash.quote': 'Citation',
+  'slash.divider': 'Séparateur',
+
+  // Dock menu
+  'menu.open': 'Menu du dock',
+  'menu.swapSide': 'Changer de côté',
+  'menu.expandNotes': 'Déplier les notes',
+  'menu.hideDock': 'Masquer le dock',
+
+  // Tray
+  'tray.toggleDock': 'Afficher / masquer le dock',
+  'tray.settings': 'Paramètres...',
+  'tray.quit': 'Quitter',
+
+  // Settings window
+  'settings.title': 'Paramètres',
+  'settings.close': 'Fermer',
+  'settings.general': 'Général',
+  'settings.launchAtStartup': 'Lancer AeroNotes au démarrage de Windows',
+  'settings.language': 'Langue',
+  'settings.language.system': 'Système (auto)',
+  'settings.globalShortcuts': 'Raccourcis globaux',
+  'settings.markdownShortcuts': 'Raccourcis markdown (dans une note)',
+  'settings.shortcut.toggleDock': 'Afficher / masquer le dock',
+  'settings.shortcut.heading1': 'Titre 1',
+  'settings.shortcut.heading2': 'Titre 2',
+  'settings.shortcut.heading3': 'Titre 3',
+  'settings.shortcut.bold': 'Gras',
+  'settings.shortcut.italic': 'Italique',
+  'settings.shortcut.strike': 'Barré',
+  'settings.shortcut.code': 'Code inline',
+  'settings.shortcut.bulletList': 'Liste à puces',
+  'settings.shortcut.numberedList': 'Liste numérotée',
+  'settings.shortcut.alphaList': 'Liste alphabétique',
+  'settings.shortcut.checklist': 'Checklist',
+  'settings.shortcut.quote': 'Citation',
+  'settings.shortcut.divider': 'Séparateur',
+  'settings.shortcut.commandMenu': 'Menu de commandes',
+  'settings.key.space': 'espace'
 }
+
+const translations: Record<Locale, Partial<Record<TranslationKey, string>>> = { en, fr }
 
 let currentLocale: Locale = 'en'
 
@@ -158,6 +289,16 @@ export function setLocale(locale: Locale): void {
 
 export function getLocale(): Locale {
   return currentLocale
+}
+
+/**
+ * Resolves the persisted preference to a concrete locale. `systemLanguages`
+ * comes from `app.getPreferredSystemLanguages()` in the main process, or
+ * `[navigator.language]` in a renderer.
+ */
+export function resolveLocale(preference: LocalePreference, systemLanguages: string[]): Locale {
+  if (preference !== 'system') return preference
+  return systemLanguages.some((lang) => lang.toLowerCase().startsWith('fr')) ? 'fr' : 'en'
 }
 
 /** Translates a key, interpolating `{param}` placeholders from `params`. */

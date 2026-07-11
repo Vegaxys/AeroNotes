@@ -1,3 +1,5 @@
+// FIRST import: sets the UI locale before store modules render any string.
+import './bootstrapLocale'
 import { app, BrowserWindow, globalShortcut } from 'electron'
 import { registerBlockHandlers } from './ipc/blockHandlers'
 import { registerImageHandlers } from './ipc/imageHandlers'

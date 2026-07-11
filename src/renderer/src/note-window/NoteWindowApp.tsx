@@ -1,4 +1,5 @@
 import { useNotesStore } from '@renderer/state/useNotesStore'
+import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { NoteFrame } from '@renderer/shared/NoteFrame'
 import { NoteEditor } from '@renderer/editor/NoteEditor'
 
@@ -15,6 +16,8 @@ export function NoteWindowApp(): React.JSX.Element | null {
   const setNoteAlwaysOnTop = useNotesStore((s) => s.setNoteAlwaysOnTop)
   const setNoteColor = useNotesStore((s) => s.setNoteColor)
   const setNoteTitle = useNotesStore((s) => s.setNoteTitle)
+  // Keyed remount on language change (labels are resolved at render time).
+  const locale = useSettingsStore((s) => s.locale)
 
   if (!noteId || !note) {
     return null
@@ -22,6 +25,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
 
   return (
     <NoteFrame
+      key={locale}
       title={note.title}
       color={note.color}
       isPinned={Boolean(note.alwaysOnTop)}

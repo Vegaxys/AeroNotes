@@ -14,7 +14,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   dockExpandedWidth: 380,
   launchAtStartup: false,
   lastOpenFolderId: null,
-  notesExpanded: true
+  notesExpanded: true,
+  locale: 'system'
 }
 
 const diskStore = new Store<PersistedSchema>({

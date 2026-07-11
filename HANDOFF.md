@@ -13,6 +13,15 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Fait dans la session du 2026-07-11 (suite) : localisation FR + sélecteur de langue
+
+- **Dictionnaire `fr` complet** dans `src/shared/i18n.ts` (typé `Record<TranslationKey, string>`, donc TS force sa complétude à chaque nouvelle clé `en`).
+- **Préférence `AppSettings.locale`** : `'system' | 'en' | 'fr'` (défaut `system` → fr si l'OS est en français, sinon en). Résolution via `resolveLocale(pref, langs)` — langs = `app.getPreferredSystemLanguages()` côté main, `[navigator.language]` côté renderer.
+- **Main** : `src/main/bootstrapLocale.ts`, module à effet de bord qui DOIT rester le premier import de `main/index.ts` (les seeds/migration de `notesStore` appellent `t()` à l'import). Changement à chaud : `settingsHandlers` re-résout la locale et appelle `tray.refreshTrayMenu()` (le tray garde une instance module-level pour reconstruire son menu).
+- **Renderers** : les trois `main.tsx` attendent `getSettings()` et font `setLocale()` avant le premier rendu (pas de flash anglais). Changement à chaud : `useSettingsStore` fait `setLocale()` avant `set()`, et `OverlayApp`/`NoteWindowApp` remontent leur arbre via `key={locale}` (les `t()` sont résolus au rendu, le remount repeint tous les libellés). La fenêtre settings re-rend simplement.
+- **UI** : sélecteur « Language / Langue » dans la fenêtre Paramètres (System (auto) / English / Français — noms de langues toujours affichés dans leur propre langue).
+- Piège documenté : ne jamais mettre un `t()` dans une `const` top-level (gelé au chargement) — cf. `getSlashCommandItems()`.
+
 ## Fait dans la session du 2026-07-11 : dock UX round 3 (à re-tester par l'utilisateur)
 
 - **Scrollbar du dock stylée** : classe `.dock-scroll` dans `theme.css` (thumb blanc translucide, miroir de celle de `.note-editor`) sur les listes notes/dossiers + la fenêtre settings.
