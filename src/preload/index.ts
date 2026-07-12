@@ -42,13 +42,15 @@ const api = {
   quitApp: (): void => {
     ipcRenderer.send(IPC_CHANNELS.APP_QUIT)
   },
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VERSION),
   closeAllNoteWindows: (): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_WINDOWS_CLOSE_ALL)
   },
   updateNoteContent: (id: string, content: JSONContent): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_UPDATE_CONTENT, id, content)
   },
-  detachNote: (id: string): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.NOTE_DETACH, id),
+  detachNote: (id: string, dropPosition?: { x: number; y: number }): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_DETACH, id, dropPosition),
   redockNote: (id: string): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.NOTE_REDOCK, id),
   focusNote: (id: string): void => ipcRenderer.send(IPC_CHANNELS.NOTE_FOCUS, id),
   setNoteAlwaysOnTop: (id: string, alwaysOnTop: boolean): void => {

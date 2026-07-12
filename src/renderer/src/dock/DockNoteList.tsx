@@ -54,10 +54,11 @@ export function DockNoteList(): React.JSX.Element {
   }
 
   const handleDragEnd = (id: string, event: React.DragEvent<HTMLDivElement>): void => {
-    // Dropped outside the dock entirely (not just onto another note): pop it open.
+    // Dropped outside the dock entirely (not just onto another note): pop it
+    // open right where it was dropped.
     const dropTarget = document.elementFromPoint(event.clientX, event.clientY)
     if (!dropTarget?.closest('[data-dock-root]')) {
-      detachNote(id)
+      detachNote(id, { x: event.screenX, y: event.screenY })
     }
     setDraggedId(null)
   }

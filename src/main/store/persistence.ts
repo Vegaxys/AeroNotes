@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   launchAtStartup: false,
   lastOpenFolderId: null,
   notesExpanded: true,
-  locale: 'system'
+  locale: 'system',
+  toggleShortcut: 'CommandOrControl+Shift+N'
 }
 
 const diskStore = new Store<PersistedSchema>({

@@ -6,8 +6,90 @@ import { resolveLocale, setLocale, t, type LocalePreference } from '@shared/i18n
 const dragRegion = { WebkitAppRegion: 'drag' } as unknown as CSSProperties
 const noDragRegion = { WebkitAppRegion: 'no-drag' } as unknown as CSSProperties
 
-function globalShortcuts(): Array<[string, string]> {
-  return [['Ctrl+Shift+N', t('settings.shortcut.toggleDock')]]
+const DEFAULT_TOGGLE_SHORTCUT = 'CommandOrControl+Shift+N'
+const MODIFIER_KEYS = new Set(['Control', 'Shift', 'Alt', 'Meta'])
+const SPECIAL_KEYS: Record<string, string> = {
+  ' ': 'Space',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  Enter: 'Enter',
+  Tab: 'Tab',
+  Backspace: 'Backspace',
+  Delete: 'Delete',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PageUp',
+  PageDown: 'PageDown'
+}
+
+/** Human display: Electron's 'CommandOrControl' reads as plain Ctrl on Windows. */
+function formatAccelerator(accelerator: string): string {
+  return accelerator.replace('CommandOrControl', 'Ctrl')
+}
+
+/** Builds an Electron accelerator from a key event; null if it isn't a valid combo. */
+function acceleratorFromEvent(event: React.KeyboardEvent): string | null {
+  if (MODIFIER_KEYS.has(event.key)) return null
+  const modifiers: string[] = []
+  if (event.ctrlKey) modifiers.push('CommandOrControl')
+  if (event.altKey) modifiers.push('Alt')
+  if (event.shiftKey) modifiers.push('Shift')
+  if (event.metaKey) modifiers.push('Super')
+  // A global shortcut without a modifier would swallow plain typing everywhere.
+  if (modifiers.length === 0) return null
+
+  let key: string | null = null
+  if (/^[a-z]$/i.test(event.key)) key = event.key.toUpperCase()
+  else if (/^[0-9]$/.test(event.key)) key = event.key
+  else if (/^F([1-9]|1[0-9]|2[0-4])$/.test(event.key)) key = event.key
+  else if (event.key in SPECIAL_KEYS) key = SPECIAL_KEYS[event.key]
+  else if (event.key.length === 1) key = event.key
+  if (!key) return null
+
+  return [...modifiers, key].join('+')
+}
+
+function ShortcutRecorder({
+  value,
+  onChange
+}: {
+  value: string
+  onChange: (accelerator: string) => void
+}): React.JSX.Element {
+  const [isRecording, setIsRecording] = useState(false)
+
+  return (
+    <button
+      onClick={() => setIsRecording(true)}
+      onBlur={() => setIsRecording(false)}
+      onKeyDown={(event) => {
+        if (!isRecording) return
+        event.preventDefault()
+        event.stopPropagation()
+        if (event.key === 'Escape') {
+          setIsRecording(false)
+          return
+        }
+        const accelerator = acceleratorFromEvent(event)
+        if (!accelerator) return
+        onChange(accelerator)
+        setIsRecording(false)
+      }}
+      className={`shrink-0 rounded border px-2 py-1 font-mono text-[11px] outline-none ${
+        isRecording
+          ? 'border-[var(--color-accent)] text-white'
+          : 'border-white/15 bg-white/10 text-white/85 hover:bg-white/15'
+      }`}
+    >
+      {isRecording ? t('settings.pressShortcut') : formatAccelerator(value)}
+    </button>
+  )
+}
+
+function globalShortcuts(toggleShortcut: string): Array<[string, string]> {
+  return [[formatAccelerator(toggleShortcut), t('settings.shortcut.toggleDock')]]
 }
 
 function markdownShortcuts(): Array<[string, string]> {
@@ -52,6 +134,11 @@ function ShortcutTable({ rows }: { rows: Array<[string, string]> }): React.JSX.E
 
 export function SettingsWindowApp(): React.JSX.Element | null {
   const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [version, setVersion] = useState('')
+
+  useEffect(() => {
+    void window.aeronotes.getAppVersion().then(setVersion)
+  }, [])
 
   useEffect(() => {
     // setLocale before setState so the re-render reads the new dictionary.
@@ -100,6 +187,13 @@ export function SettingsWindowApp(): React.JSX.Element | null {
               className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
             />
           </label>
+          <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
+            <span>{t('settings.shortcut.toggleDock')}</span>
+            <ShortcutRecorder
+              value={settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT}
+              onChange={(accelerator) => window.aeronotes.setSettings({ toggleShortcut: accelerator })}
+            />
+          </div>
           <label className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
             <span>{t('settings.language')}</span>
             <select
@@ -121,7 +215,7 @@ export function SettingsWindowApp(): React.JSX.Element | null {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">
             {t('settings.globalShortcuts')}
           </h2>
-          <ShortcutTable rows={globalShortcuts()} />
+          <ShortcutTable rows={globalShortcuts(settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)} />
         </section>
 
         <section className="space-y-2">
@@ -130,6 +224,8 @@ export function SettingsWindowApp(): React.JSX.Element | null {
           </h2>
           <ShortcutTable rows={markdownShortcuts()} />
         </section>
+
+        {version && <p className="pb-1 text-center text-xs text-white/30">AeroNotes v{version}</p>}
       </div>
     </div>
   )

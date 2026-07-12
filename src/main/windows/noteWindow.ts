@@ -1,9 +1,14 @@
 import { join } from 'path'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, screen } from 'electron'
 import type { Note } from '@shared/types'
 
 const DEFAULT_WIDTH = 420
 const DEFAULT_HEIGHT = 520
+
+export interface ScreenPosition {
+  x: number
+  y: number
+}
 
 /**
  * Transparent frameless windows on Windows sometimes never get an initial
@@ -20,12 +25,26 @@ function forceInitialPaint(window: BrowserWindow): void {
   })
 }
 
-export function createNoteWindow(note: Note): BrowserWindow {
+export function createNoteWindow(note: Note, dropPosition?: ScreenPosition): BrowserWindow {
   const bounds = note.windowBounds ?? {
     x: 160,
     y: 160,
     width: DEFAULT_WIDTH,
     height: DEFAULT_HEIGHT
+  }
+
+  // Dragged out of the dock: open right under the cursor (title bar centered
+  // on it), clamped to the target display's work area.
+  if (dropPosition) {
+    const workArea = screen.getDisplayNearestPoint(dropPosition).workArea
+    bounds.x = Math.min(
+      Math.max(Math.round(dropPosition.x - bounds.width / 2), workArea.x),
+      workArea.x + workArea.width - bounds.width
+    )
+    bounds.y = Math.min(
+      Math.max(Math.round(dropPosition.y - 16), workArea.y),
+      workArea.y + workArea.height - bounds.height
+    )
   }
 
   const window = new BrowserWindow({

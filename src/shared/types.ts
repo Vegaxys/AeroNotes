@@ -60,4 +60,6 @@ export interface AppSettings {
   notesExpanded?: boolean
   /** UI language: an explicit locale, or 'system' to follow the OS. */
   locale?: LocalePreference
+  /** Electron accelerator toggling the dock (default CommandOrControl+Shift+N). */
+  toggleShortcut?: string
 }

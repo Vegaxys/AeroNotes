@@ -1,6 +1,7 @@
 // FIRST import: sets the UI locale before store modules render any string.
 import './bootstrapLocale'
 import { app, BrowserWindow, globalShortcut } from 'electron'
+import { startFullscreenWatcher } from './fullscreenWatcher'
 import { registerBlockHandlers } from './ipc/blockHandlers'
 import { registerImageHandlers } from './ipc/imageHandlers'
 import { registerNotesHandlers } from './ipc/notesHandlers'
@@ -30,6 +31,7 @@ app.whenReady().then(() => {
   applyLaunchAtStartup(Boolean(settingsStore.get().launchAtStartup))
   overlayWindow = createOverlayWindow()
   tray = createTray(() => overlayWindow)
+  startFullscreenWatcher(() => overlayWindow)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

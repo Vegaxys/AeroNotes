@@ -20,7 +20,7 @@ interface NotesState {
   duplicateNote: (id: string) => void
   moveNoteToFolder: (id: string, folderId: string) => void
   updateNoteContent: (id: string, content: JSONContent) => void
-  detachNote: (id: string) => void
+  detachNote: (id: string, dropPosition?: { x: number; y: number }) => void
   redockNote: (id: string) => void
   focusNote: (id: string) => void
   setNoteAlwaysOnTop: (id: string, alwaysOnTop: boolean) => void
@@ -76,7 +76,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
     duplicateNote: (id) => void window.aeronotes.duplicateNote(id),
     moveNoteToFolder: (id, folderId) => window.aeronotes.moveNoteToFolder(id, folderId),
     updateNoteContent: (id, content) => window.aeronotes.updateNoteContent(id, content),
-    detachNote: (id) => void window.aeronotes.detachNote(id),
+    detachNote: (id, dropPosition) => void window.aeronotes.detachNote(id, dropPosition),
     redockNote: (id) => void window.aeronotes.redockNote(id),
     focusNote: (id) => window.aeronotes.focusNote(id),
     setNoteAlwaysOnTop: (id, alwaysOnTop) => window.aeronotes.setNoteAlwaysOnTop(id, alwaysOnTop),

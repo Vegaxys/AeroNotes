@@ -13,6 +13,16 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Fait dans la session du 2026-07-12 : fixes & features round 4 (à re-tester par l'utilisateur)
+
+- **Version affichée** en bas de la fenêtre Paramètres (`app:get-version` → `app.getVersion()`).
+- **Drag-out au curseur** : `NOTE_DETACH` accepte une position écran optionnelle ; `createNoteWindow` centre la barre de titre sous le curseur, clampé dans la workArea de l'écran visé. Le detach via menu contextuel/clic garde l'ancien comportement (bounds persistés).
+- **Fantôme de l'app au drag dans le vide** : deux gardes — `select-none` sur le root du dock (`.note-editor` ré-opte en `user-select: text`) + listener `dragstart` document dans `OverlayApp` qui `preventDefault()` sauf si la cible est dans un `[draggable="true"]`.
+- **Menu contextuel confiné à l'écran** : `useLayoutEffect` qui mesure le menu et clamp x/y (re-mesure quand la sous-liste dossiers s'ouvre).
+- **Raccourci configurable** : `AppSettings.toggleShortcut` (défaut `CommandOrControl+Shift+N`) ; `tray.applyToggleShortcut()` ré-enregistre à chaud, revert au précédent si l'accélérateur est invalide/pris (avec fallback défaut pour ne jamais perdre l'accès au dock) ; recorder dans Paramètres (clic → capture du prochain combo, Échap annule, modificateur obligatoire).
+- **Dock derrière les jeux plein écran** : `src/main/fullscreenWatcher.ts` — un PowerShell enfant persistant (spawn caché, tué au quit) poll Win32 toutes les 1,5 s : si la fenêtre au premier plan appartient à un autre process, n'est pas le bureau (classes Progman/WorkerW exclues) et couvre EXACTEMENT son moniteur (une fenêtre maximisée déborde de ses bords invisibles → non matchée), il émet « 1 » → `overlay.setAlwaysOnTop(false)` ; « 0 » → restauré en 'floating'. Zéro dépendance native. Si le spawn échoue, feature silencieusement off.
+- **Caret invisible sur checklist vide** : le `<li>` des task lists est en flex et le wrapper de contenu collapsait à 0 de large sur un paragraphe vide → `li > div { flex: 1 1 auto; min-width: 0 }`.
+
 ## Fait dans la session du 2026-07-11 (suite) : localisation FR + sélecteur de langue
 
 - **Dictionnaire `fr` complet** dans `src/shared/i18n.ts` (typé `Record<TranslationKey, string>`, donc TS force sa complétude à chaque nouvelle clé `en`).

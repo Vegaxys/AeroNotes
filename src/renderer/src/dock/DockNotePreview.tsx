@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Note } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
 import { t } from '@shared/i18n'
@@ -66,8 +66,21 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
   const notesExpanded = useSettingsStore((s) => s.notesExpanded)
 
   const cardRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [menu, setMenu] = useState<ContextMenuState | null>(null)
+
+  // Keep the context menu fully on screen — including when the folders
+  // sub-list expands it (any menu state change re-measures).
+  useLayoutEffect(() => {
+    if (!menu || !menuRef.current) return
+    const rect = menuRef.current.getBoundingClientRect()
+    const x = Math.max(Math.min(menu.x, window.innerWidth - rect.width - 8), 8)
+    const y = Math.max(Math.min(menu.y, window.innerHeight - rect.height - 8), 8)
+    if (x !== menu.x || y !== menu.y) {
+      setMenu({ ...menu, x, y })
+    }
+  }, [menu])
 
   useEffect(() => {
     if (!menu) return
@@ -130,6 +143,7 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
 
   const contextMenu = menu && (
     <div
+      ref={menuRef}
       data-mouse-live=""
       onClick={(e) => e.stopPropagation()}
       className="note-context-menu fixed z-50 w-52 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 text-xs text-white/85 shadow-2xl"

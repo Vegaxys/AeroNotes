@@ -16,6 +16,7 @@ export const IPC_CHANNELS = {
   NOTE_MOVE_TO_FOLDER: 'note:move-to-folder',
   OVERLAY_HIDE: 'overlay:hide',
   APP_QUIT: 'app:quit',
+  APP_GET_VERSION: 'app:get-version',
   SETTINGS_WINDOW_OPEN: 'settings-window:open',
   NOTE_WINDOWS_CLOSE_ALL: 'note-windows:close-all',
   FOLDERS_GET_ALL: 'folders:get-all',

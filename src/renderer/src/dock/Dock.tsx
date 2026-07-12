@@ -28,7 +28,9 @@ export function Dock(): React.JSX.Element {
       // strip doesn't block clicks on whatever is behind the overlay.
       data-mouse-live={dockCollapsed ? undefined : ''}
       data-dock-root
-      className="fixed top-0 bottom-0 flex flex-col transition-[width] duration-200 ease-out"
+      // select-none: the dock chrome must not be text-selectable (dragging a
+      // selection ghosts the app); .note-editor opts back in for note content.
+      className="fixed top-0 bottom-0 flex select-none flex-col transition-[width] duration-200 ease-out"
       style={{ [dockSide]: 0, width }}
     >
       <div

@@ -2,7 +2,7 @@ import { BrowserWindow, screen } from 'electron'
 import { broadcastSettings } from '../ipc/settingsHandlers'
 import { notesStore } from '../store/notesStore'
 import { settingsStore } from '../store/settingsStore'
-import { createNoteWindow } from './noteWindow'
+import { createNoteWindow, type ScreenPosition } from './noteWindow'
 
 const noteWindows = new Map<string, BrowserWindow>()
 
@@ -34,7 +34,7 @@ function expandDockIfDraggedOntoTab(): void {
   }
 }
 
-export function detachNote(id: string, onChanged: () => void): void {
+export function detachNote(id: string, onChanged: () => void, dropPosition?: ScreenPosition): void {
   if (noteWindows.has(id)) {
     focusNote(id)
     return
@@ -44,7 +44,7 @@ export function detachNote(id: string, onChanged: () => void): void {
   if (!note) return
 
   notesStore.setDetached(id, true)
-  const window = createNoteWindow(notesStore.getById(id)!)
+  const window = createNoteWindow(notesStore.getById(id)!, dropPosition)
   noteWindows.set(id, window)
 
   const persistBounds = (): void => {

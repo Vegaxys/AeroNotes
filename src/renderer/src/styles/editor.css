@@ -3,6 +3,12 @@
   min-height: 100px;
 }
 
+/* The dock root is select-none (its chrome must not be selectable); note
+ * content itself stays selectable. */
+.note-editor {
+  user-select: text;
+}
+
 /* Themed scrollbar so it blends with the post-it's own color instead of the
  * default OS scrollbar look. */
 .note-editor {
@@ -131,6 +137,14 @@
 .note-editor ul[data-type='taskList'] li > label {
   margin-top: 3px;
   user-select: none;
+}
+
+/* An empty paragraph inside a task item's flex row collapses to zero width,
+ * which hides the caret until some text exists; let the content wrapper fill
+ * the remaining row width instead. */
+.note-editor ul[data-type='taskList'] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /*

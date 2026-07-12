@@ -130,9 +130,12 @@ export function registerNotesHandlers(): void {
     broadcastNotes()
   })
 
-  ipcMain.handle(IPC_CHANNELS.NOTE_DETACH, (_event, id: string) => {
-    detachNote(id, broadcastNotes)
-  })
+  ipcMain.handle(
+    IPC_CHANNELS.NOTE_DETACH,
+    (_event, id: string, dropPosition?: { x: number; y: number }) => {
+      detachNote(id, broadcastNotes, dropPosition)
+    }
+  )
 
   ipcMain.handle(IPC_CHANNELS.NOTE_REDOCK, (_event, id: string) => {
     redockNote(id, broadcastNotes)
