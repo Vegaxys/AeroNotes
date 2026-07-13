@@ -1,6 +1,6 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { JSONContent } from '@tiptap/core'
-import type { NoteColor } from '@shared/types'
+import type { NoteColor, Template } from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { t } from '@shared/i18n'
 import { notesStore } from '../store/notesStore'
@@ -10,8 +10,10 @@ import {
   detachNote,
   focusNote,
   redockNote,
-  setNoteAlwaysOnTop
+  setNoteAlwaysOnTop,
+  toggleNoteCollapse
 } from '../windows/noteWindowRegistry'
+import { openTemplateEditorWindow } from '../windows/templateEditorWindow'
 
 /** Native confirmation dialog; resolves true when the user confirms the deletion. */
 async function confirmDeletion(
@@ -35,22 +37,38 @@ async function confirmDeletion(
   return result.response === 0
 }
 
-function broadcastNotes(): void {
+export function broadcastNotes(): void {
   const notes = notesStore.getAll()
   BrowserWindow.getAllWindows().forEach((window) => {
     window.webContents.send(IPC_CHANNELS.NOTES_CHANGED, notes)
   })
 }
 
-function broadcastFolders(): void {
+export function broadcastTemplates(): void {
+  const templates = notesStore.getTemplates()
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.webContents.send(IPC_CHANNELS.TEMPLATES_CHANGED, templates)
+  })
+}
+
+export function broadcastFolders(): void {
   const folders = notesStore.getFolders()
   BrowserWindow.getAllWindows().forEach((window) => {
     window.webContents.send(IPC_CHANNELS.FOLDERS_CHANGED, folders)
   })
 }
 
+/** Session-only color clipboard shared by every window. */
+let copiedColor: NoteColor | null = null
+
 export function registerNotesHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.NOTES_GET_ALL, () => notesStore.getAll())
+
+  ipcMain.on(IPC_CHANNELS.COLOR_COPY, (_event, color: NoteColor) => {
+    copiedColor = color
+  })
+
+  ipcMain.handle(IPC_CHANNELS.COLOR_GET_COPIED, () => copiedColor)
 
   ipcMain.handle(IPC_CHANNELS.NOTE_ADD, (_event, folderId: string) => {
     const note = notesStore.add(folderId)
@@ -108,6 +126,43 @@ export function registerNotesHandlers(): void {
     broadcastNotes()
   })
 
+  ipcMain.handle(IPC_CHANNELS.TEMPLATES_GET_ALL, () => notesStore.getTemplates())
+
+  ipcMain.handle(
+    IPC_CHANNELS.TEMPLATE_ADD,
+    (_event, name: string, content: JSONContent): Template => {
+      const template = notesStore.addTemplate(name, content)
+      broadcastTemplates()
+      return template
+    }
+  )
+
+  ipcMain.on(
+    IPC_CHANNELS.TEMPLATE_UPDATE,
+    (_event, id: string, patch: { name?: string; content?: JSONContent }) => {
+      notesStore.updateTemplate(id, patch)
+      broadcastTemplates()
+    }
+  )
+
+  ipcMain.on(IPC_CHANNELS.TEMPLATE_EDITOR_OPEN, (_event, id: string) => {
+    openTemplateEditorWindow(id)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.TEMPLATE_DELETE, async (event, id: string): Promise<boolean> => {
+    const template = notesStore.getTemplateById(id)
+    if (!template) return false
+    const confirmed = await confirmDeletion(
+      event.sender,
+      t('confirm.deleteTemplate.title'),
+      t('confirm.deleteTemplate.message', { name: template.name })
+    )
+    if (!confirmed) return false
+    notesStore.deleteTemplate(id)
+    broadcastTemplates()
+    return true
+  })
+
   ipcMain.handle(IPC_CHANNELS.FOLDER_DELETE, async (event, id: string): Promise<boolean> => {
     const folder = notesStore.getFolders().find((f) => f.id === id)
     if (!folder) return false
@@ -148,6 +203,10 @@ export function registerNotesHandlers(): void {
   ipcMain.on(IPC_CHANNELS.NOTE_SET_ALWAYS_ON_TOP, (_event, id: string, alwaysOnTop: boolean) => {
     setNoteAlwaysOnTop(id, alwaysOnTop)
     broadcastNotes()
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_TOGGLE_COLLAPSE, (_event, id: string) => {
+    toggleNoteCollapse(id)
   })
 
   ipcMain.on(IPC_CHANNELS.NOTE_SET_COLOR, (_event, id: string, color: NoteColor) => {

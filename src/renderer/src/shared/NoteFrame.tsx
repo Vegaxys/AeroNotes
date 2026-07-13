@@ -1,8 +1,9 @@
-import { useState, type CSSProperties } from 'react'
-import type { NoteColor } from '@shared/types'
+import { useEffect, useState, type CSSProperties } from 'react'
+import type { Note, NoteColor } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
 import { t } from '@shared/i18n'
 import { ColorPicker } from './ColorPicker'
+import { NoteHeaderMenu, type NoteHeaderMenuState } from './NoteHeaderMenu'
 
 /** `WebkitAppRegion` drives native window dragging in Electron but isn't in DOM's CSSProperties. */
 const dragRegion = { WebkitAppRegion: 'drag' } as unknown as CSSProperties
@@ -17,27 +18,33 @@ interface NoteFrameProps {
   onDelete: () => void
   onColorChange: (color: NoteColor) => void
   onTitleChange: (title: string) => void
+  /** When provided, right-clicking the titlebar opens the shared note context menu. */
+  note?: Note
   children: React.ReactNode
 }
 
 function EditableTitle({
   title,
+  isEditing,
+  onStartEdit,
+  onStopEdit,
   onTitleChange
 }: {
   title: string
+  isEditing: boolean
+  onStartEdit: () => void
+  onStopEdit: () => void
   onTitleChange: (title: string) => void
 }): React.JSX.Element {
-  const [isEditing, setIsEditing] = useState(false)
-
   if (isEditing) {
     return (
       <input
         autoFocus
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
-        onBlur={() => setIsEditing(false)}
+        onBlur={onStopEdit}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
         }}
         placeholder={t('note.untitled')}
         spellCheck={false}
@@ -53,7 +60,7 @@ function EditableTitle({
   // the window's drag region.
   return (
     <span
-      onClick={() => setIsEditing(true)}
+      onClick={onStartEdit}
       style={noDragRegion}
       className="max-w-full cursor-text truncate text-sm font-semibold text-black/80"
     >
@@ -71,8 +78,22 @@ export function NoteFrame({
   onDelete,
   onColorChange,
   onTitleChange,
+  note,
   children
 }: NoteFrameProps): React.JSX.Element {
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [menu, setMenu] = useState<NoteHeaderMenuState | null>(null)
+
+  // The titlebar is a drag region, so DOM mouse events never reach it —
+  // right-clicks are caught natively by the main process and relayed here.
+  const hasNote = Boolean(note)
+  useEffect(() => {
+    if (!hasNote) return
+    return window.aeronotes.onNoteHeaderContextMenu((x, y) =>
+      setMenu({ x, y, foldersOpen: false })
+    )
+  }, [hasNote])
+
   return (
     <div
       className="flex h-screen w-screen flex-col overflow-hidden rounded-[var(--radius-lg)] shadow-2xl"
@@ -82,7 +103,13 @@ export function NoteFrame({
         className="flex shrink-0 items-center gap-2 border-b border-black/10 px-3 py-2"
         style={dragRegion}
       >
-        <EditableTitle title={title} onTitleChange={onTitleChange} />
+        <EditableTitle
+          title={title}
+          isEditing={isEditingTitle}
+          onStartEdit={() => setIsEditingTitle(true)}
+          onStopEdit={() => setIsEditingTitle(false)}
+          onTitleChange={onTitleChange}
+        />
         <div className="ml-auto flex shrink-0 items-center gap-1" style={noDragRegion}>
           <ColorPicker value={color} onChange={onColorChange} />
           <button
@@ -114,6 +141,15 @@ export function NoteFrame({
         </div>
       </div>
       <div className="flex-1 overflow-hidden">{children}</div>
+      {note && menu && (
+        <NoteHeaderMenu
+          note={note}
+          menu={menu}
+          setMenu={setMenu}
+          surface="window"
+          onRename={() => setIsEditingTitle(true)}
+        />
+      )}
     </div>
   )
 }

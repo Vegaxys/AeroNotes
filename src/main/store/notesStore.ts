@@ -1,9 +1,26 @@
 import type { JSONContent } from '@tiptap/core'
-import type { Folder, Note, WindowBounds } from '@shared/types'
+import type {
+  Folder,
+  Note,
+  SyncDocument,
+  SyncedNote,
+  SyncTombstones,
+  Template,
+  WindowBounds
+} from '@shared/types'
 import { GRADIENT_PRESETS, SOLID_PRESETS } from '@shared/colorPalette'
 import { extractPlainText } from '@shared/plainTextExtract'
 import { t } from '@shared/i18n'
-import { loadFolders, loadNotes, saveFolders, saveNotes } from './persistence'
+import {
+  loadFolders,
+  loadNotes,
+  loadTemplates,
+  loadTombstones,
+  saveFolders,
+  saveNotes,
+  saveTemplates,
+  saveTombstones
+} from './persistence'
 
 const SAVE_DEBOUNCE_MS = 500
 
@@ -56,10 +73,17 @@ function seedNotes(folderId: string): Note[] {
 class NotesStore {
   private notes = new Map<string, Note>()
   private folders = new Map<string, Folder>()
+  private templates = new Map<string, Template>(loadTemplates().map((tpl) => [tpl.id, tpl]))
+  private tombstones: SyncTombstones = loadTombstones()
   private saveTimeout: ReturnType<typeof setTimeout> | null = null
+  /** Cloud sync hook — fires on every user-driven mutation (not on applyRemote). */
+  private onMutated: (() => void) | null = null
 
   constructor() {
-    loadFolders().forEach((folder) => this.folders.set(folder.id, folder))
+    // Migration: folders persisted before cloud sync have no updatedAt.
+    loadFolders().forEach((folder) =>
+      this.folders.set(folder.id, { ...folder, updatedAt: folder.updatedAt ?? folder.createdAt })
+    )
 
     const persisted = loadNotes()
     if (persisted.length === 0 && this.folders.size === 0) {
@@ -85,9 +109,14 @@ class NotesStore {
   }
 
   private createFolder(name: string): Folder {
-    const folder: Folder = { id: crypto.randomUUID(), name, createdAt: Date.now() }
+    const timestamp = Date.now()
+    const folder: Folder = { id: crypto.randomUUID(), name, createdAt: timestamp, updatedAt: timestamp }
     this.folders.set(folder.id, folder)
     return folder
+  }
+
+  setOnMutated(callback: () => void): void {
+    this.onMutated = callback
   }
 
   getAll(): Note[] {
@@ -111,12 +140,48 @@ class NotesStore {
   renameFolder(id: string, name: string): void {
     const folder = this.folders.get(id)
     if (!folder) return
-    this.folders.set(id, { ...folder, name })
+    this.folders.set(id, { ...folder, name, updatedAt: Date.now() })
     this.scheduleSave()
   }
 
   deleteNote(id: string): void {
     if (!this.notes.delete(id)) return
+    this.tombstones.notes[id] = Date.now()
+    this.scheduleSave()
+  }
+
+  getTemplates(): Template[] {
+    return [...this.templates.values()].sort((a, b) => a.createdAt - b.createdAt)
+  }
+
+  getTemplateById(id: string): Template | undefined {
+    return this.templates.get(id)
+  }
+
+  addTemplate(name: string, content: JSONContent): Template {
+    const timestamp = Date.now()
+    const template: Template = {
+      id: crypto.randomUUID(),
+      name,
+      content: structuredClone(content),
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }
+    this.templates.set(template.id, template)
+    this.scheduleSave()
+    return template
+  }
+
+  updateTemplate(id: string, patch: Partial<Pick<Template, 'name' | 'content'>>): void {
+    const template = this.templates.get(id)
+    if (!template) return
+    this.templates.set(id, { ...template, ...patch, updatedAt: Date.now() })
+    this.scheduleSave()
+  }
+
+  deleteTemplate(id: string): void {
+    if (!this.templates.delete(id)) return
+    this.tombstones.templates[id] = Date.now()
     this.scheduleSave()
   }
 
@@ -156,8 +221,13 @@ class NotesStore {
   /** Deletes a folder and all its notes; returns the ids of the deleted notes. */
   deleteFolder(id: string): string[] {
     if (!this.folders.delete(id)) return []
+    const timestamp = Date.now()
+    this.tombstones.folders[id] = timestamp
     const noteIds = [...this.notes.values()].filter((n) => n.folderId === id).map((n) => n.id)
-    noteIds.forEach((noteId) => this.notes.delete(noteId))
+    noteIds.forEach((noteId) => {
+      this.notes.delete(noteId)
+      this.tombstones.notes[noteId] = timestamp
+    })
     this.scheduleSave()
     return noteIds
   }
@@ -242,9 +312,64 @@ class NotesStore {
     this.scheduleSave()
   }
 
-  private scheduleSave(): void {
+  getTombstones(): SyncTombstones {
+    return structuredClone(this.tombstones)
+  }
+
+  /** Snapshot for cloud sync — per-machine runtime state stripped from notes. */
+  toSyncDocument(): SyncDocument {
+    const notes: Record<string, SyncedNote> = {}
+    for (const note of this.notes.values()) {
+      const { isDetached: _detached, windowBounds: _bounds, alwaysOnTop: _pinned, ...synced } = note
+      notes[note.id] = synced
+    }
+    const folders: Record<string, Folder> = {}
+    for (const folder of this.folders.values()) {
+      folders[folder.id] = folder
+    }
+    const templates: Record<string, Template> = {}
+    for (const template of this.templates.values()) {
+      templates[template.id] = template
+    }
+    return { schemaVersion: 1, notes, folders, templates, tombstones: structuredClone(this.tombstones) }
+  }
+
+  /**
+   * Replaces collections with the merged sync result, keeping each note's
+   * local runtime state (detached window, bounds, pin). Returns the ids of
+   * notes whose synced content changed (their open editors must reload) and
+   * of notes that disappeared (their windows must close).
+   */
+  applyRemote(merged: SyncDocument): { changedNoteIds: string[]; deletedNoteIds: string[] } {
+    const changedNoteIds: string[] = []
+    const nextNotes = new Map<string, Note>()
+    for (const synced of Object.values(merged.notes)) {
+      const existing = this.notes.get(synced.id)
+      if (!existing || existing.updatedAt !== synced.updatedAt) {
+        changedNoteIds.push(synced.id)
+      }
+      nextNotes.set(synced.id, {
+        ...synced,
+        isDetached: existing?.isDetached ?? false,
+        windowBounds: existing?.windowBounds,
+        alwaysOnTop: existing?.alwaysOnTop
+      })
+    }
+    const deletedNoteIds = [...this.notes.keys()].filter((id) => !nextNotes.has(id))
+
+    this.notes = nextNotes
+    this.folders = new Map(Object.entries(merged.folders))
+    this.templates = new Map(Object.entries(merged.templates ?? {}))
+    this.tombstones = structuredClone(merged.tombstones)
+    this.scheduleSave(false)
+    return { changedNoteIds, deletedNoteIds }
+  }
+
+  private scheduleSave(notifyMutation = true): void {
     if (this.saveTimeout) clearTimeout(this.saveTimeout)
     this.saveTimeout = setTimeout(() => this.flush(), SAVE_DEBOUNCE_MS)
+    // Not on applyRemote: a just-pulled state has nothing new to push.
+    if (notifyMutation) this.onMutated?.()
   }
 
   flush(): void {
@@ -254,6 +379,8 @@ class NotesStore {
     }
     saveNotes(this.getAll())
     saveFolders(this.getFolders())
+    saveTemplates(this.getTemplates())
+    saveTombstones(this.tombstones)
   }
 }
 

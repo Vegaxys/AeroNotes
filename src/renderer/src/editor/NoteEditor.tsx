@@ -6,6 +6,7 @@ import { createNoteEditorExtensions } from './extensions'
 import { BubbleToolbar } from './BubbleToolbar'
 import { TableControls } from './TableControls'
 import { BlockDragHandle } from './BlockDragHandle'
+import { TemplateCarousel } from './TemplateCarousel'
 import { HIGHLIGHT_COLORS } from './highlightColors'
 import { imagePasteDropProps } from './imagePasteDrop'
 import '../styles/editor.css'
@@ -20,14 +21,23 @@ interface NoteEditorProps {
    * cross-window transfer stay a detached-post-it feature).
    */
   compact?: boolean
+  /** Show the template pills while the note is empty. */
+  showTemplates?: boolean
 }
 
 /** Rough width of the highlight popup, to clamp it inside the container. */
 const HIGHLIGHT_MENU_WIDTH_PX = 180
 
-export function NoteEditor({ noteId, content, onChange, compact }: NoteEditorProps): React.JSX.Element | null {
+export function NoteEditor({
+  noteId,
+  content,
+  onChange,
+  compact,
+  showTemplates
+}: NoteEditorProps): React.JSX.Element | null {
   const containerRef = useRef<HTMLDivElement>(null)
   const [highlightMenu, setHighlightMenu] = useState<{ top: number; left: number } | null>(null)
+  const [isEmpty, setIsEmpty] = useState(false)
 
   const editor = useEditor({
     immediatelyRender: true,
@@ -51,7 +61,11 @@ export function NoteEditor({ noteId, content, onChange, compact }: NoteEditorPro
       // No correction UI is wired up, so the spellcheck squiggly underline is just noise.
       attributes: { spellcheck: 'false' }
     },
-    onUpdate: ({ editor }) => onChange?.(editor.getJSON())
+    onCreate: ({ editor }) => setIsEmpty(editor.isEmpty),
+    onUpdate: ({ editor }) => {
+      setIsEmpty(editor.isEmpty)
+      onChange?.(editor.getJSON())
+    }
   })
 
   // The click that opens the menu is already finished when this effect runs,
@@ -91,6 +105,15 @@ export function NoteEditor({ noteId, content, onChange, compact }: NoteEditorPro
       {!compact && <BlockDragHandle editor={editor} containerRef={containerRef} noteId={noteId} />}
       {!compact && <TableControls editor={editor} containerRef={containerRef} />}
       <EditorContent editor={editor} />
+      {showTemplates && isEmpty && (
+        <TemplateCarousel
+          onApply={(templateContent) => {
+            editor.commands.setContent(templateContent)
+            setIsEmpty(editor.isEmpty)
+            onChange?.(editor.getJSON())
+          }}
+        />
+      )}
       {highlightMenu && (
         <div
           className="highlight-color-menu absolute z-20 flex items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1.5 shadow-2xl"

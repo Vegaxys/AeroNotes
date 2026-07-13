@@ -55,6 +55,10 @@ export function createNoteWindow(note: Note, dropPosition?: ScreenPosition): Bro
     transparent: true,
     hasShadow: true,
     resizable: true,
+    // Without this, double-clicking the titlebar drag region maximizes the
+    // window (default caption behavior) instead of letting the collapse
+    // toggle handle it.
+    maximizable: false,
     show: false,
     alwaysOnTop: note.alwaysOnTop ?? false,
     webPreferences: {

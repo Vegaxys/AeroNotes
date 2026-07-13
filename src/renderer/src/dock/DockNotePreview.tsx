@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Note } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
 import { t } from '@shared/i18n'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
+import { NoteHeaderMenu, type NoteHeaderMenuState } from '@renderer/shared/NoteHeaderMenu'
 import { NoteEditor } from '@renderer/editor/NoteEditor'
 
 interface DockNoteCardProps {
@@ -11,12 +12,6 @@ interface DockNoteCardProps {
   /** Drag props live on the card header, not the whole card: the editor body must keep text selection usable. */
   onDragStart: () => void
   onDragEnd: (event: React.DragEvent<HTMLDivElement>) => void
-}
-
-interface ContextMenuState {
-  x: number
-  y: number
-  foldersOpen: boolean
 }
 
 function formatUpdatedAt(timestamp: number): string {
@@ -33,64 +28,16 @@ function formatUpdatedAt(timestamp: number): string {
   return updated.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })
 }
 
-function MenuItem({
-  onClick,
-  danger,
-  children
-}: {
-  onClick: () => void
-  danger?: boolean
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10 ${
-        danger ? 'text-red-400' : ''
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
 export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardProps): React.JSX.Element {
   const detachNote = useNotesStore((s) => s.detachNote)
   const focusNote = useNotesStore((s) => s.focusNote)
-  const deleteNote = useNotesStore((s) => s.deleteNote)
-  const duplicateNote = useNotesStore((s) => s.duplicateNote)
-  const moveNoteToFolder = useNotesStore((s) => s.moveNoteToFolder)
   const updateNoteContent = useNotesStore((s) => s.updateNoteContent)
   const setNoteTitle = useNotesStore((s) => s.setNoteTitle)
-  const folders = useNotesStore((s) => s.folders)
   const notesExpanded = useSettingsStore((s) => s.notesExpanded)
 
   const cardRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [menu, setMenu] = useState<ContextMenuState | null>(null)
-
-  // Keep the context menu fully on screen — including when the folders
-  // sub-list expands it (any menu state change re-measures).
-  useLayoutEffect(() => {
-    if (!menu || !menuRef.current) return
-    const rect = menuRef.current.getBoundingClientRect()
-    const x = Math.max(Math.min(menu.x, window.innerWidth - rect.width - 8), 8)
-    const y = Math.max(Math.min(menu.y, window.innerHeight - rect.height - 8), 8)
-    if (x !== menu.x || y !== menu.y) {
-      setMenu({ ...menu, x, y })
-    }
-  }, [menu])
-
-  useEffect(() => {
-    if (!menu) return
-    function handlePointerDown(event: PointerEvent): void {
-      if (event.target instanceof Element && event.target.closest('.note-context-menu')) return
-      setMenu(null)
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [menu])
+  const [menu, setMenu] = useState<NoteHeaderMenuState | null>(null)
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>): void => {
     // Whole card as the drag ghost, anchored right under the cursor, and an
@@ -106,8 +53,6 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
     event.preventDefault()
     setMenu({ x: event.clientX, y: event.clientY, foldersOpen: false })
   }
-
-  const otherFolders = folders.filter((folder) => folder.id !== note.folderId)
 
   // The whole header is a grab zone; every action lives in the context menu.
   const header = (
@@ -142,70 +87,13 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
   )
 
   const contextMenu = menu && (
-    <div
-      ref={menuRef}
-      data-mouse-live=""
-      onClick={(e) => e.stopPropagation()}
-      className="note-context-menu fixed z-50 w-52 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 text-xs text-white/85 shadow-2xl"
-      style={{ top: menu.y, left: menu.x }}
-    >
-      <MenuItem
-        onClick={() => {
-          setIsEditingTitle(true)
-          setMenu(null)
-        }}
-      >
-        {t('note.rename')}
-      </MenuItem>
-      <MenuItem onClick={() => setMenu({ ...menu, foldersOpen: !menu.foldersOpen })}>
-        <span>{t('note.moveToFolder')}</span>
-        <span className="text-white/50">{menu.foldersOpen ? '▾' : '▸'}</span>
-      </MenuItem>
-      {menu.foldersOpen && (
-        <div className="ml-2 flex flex-col border-l border-white/10 pl-1">
-          {otherFolders.map((folder) => (
-            <MenuItem
-              key={folder.id}
-              onClick={() => {
-                moveNoteToFolder(note.id, folder.id)
-                setMenu(null)
-              }}
-            >
-              📁 {folder.name}
-            </MenuItem>
-          ))}
-          {otherFolders.length === 0 && <p className="px-2 py-1.5 text-white/40">—</p>}
-        </div>
-      )}
-      <MenuItem
-        onClick={() => {
-          duplicateNote(note.id)
-          setMenu(null)
-        }}
-      >
-        {t('note.duplicate')}
-      </MenuItem>
-      {!note.isDetached && (
-        <MenuItem
-          onClick={() => {
-            detachNote(note.id)
-            setMenu(null)
-          }}
-        >
-          {t('note.detach')}
-        </MenuItem>
-      )}
-      <div className="my-1 h-px bg-white/10" />
-      <MenuItem
-        danger
-        onClick={() => {
-          deleteNote(note.id)
-          setMenu(null)
-        }}
-      >
-        {t('note.delete')}
-      </MenuItem>
-    </div>
+    <NoteHeaderMenu
+      note={note}
+      menu={menu}
+      setMenu={setMenu}
+      surface="dock"
+      onRename={() => setIsEditingTitle(true)}
+    />
   )
 
   const isEditorCard = notesExpanded && !note.isDetached
@@ -248,6 +136,9 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
         noteId={note.id}
         content={note.content}
         onChange={(content) => updateNoteContent(note.id, content)}
+        // The editor card only exists in expanded mode, which is exactly when
+        // the dock should offer templates.
+        showTemplates
       />
       {contextMenu}
     </div>

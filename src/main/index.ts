@@ -8,6 +8,8 @@ import { registerNotesHandlers } from './ipc/notesHandlers'
 import { registerOverlayHandlers } from './ipc/overlayHandlers'
 import { registerSettingsHandlers } from './ipc/settingsHandlers'
 import { registerShellHandlers } from './ipc/shellHandlers'
+import { registerSyncHandlers } from './ipc/syncHandlers'
+import { initSync } from './sync/syncEngine'
 import { registerImageProtocol } from './protocols/imageProtocol'
 import { applyLaunchAtStartup } from './startup'
 import { notesStore } from './store/notesStore'
@@ -29,9 +31,11 @@ app.whenReady().then(() => {
   // Re-assert the login item on every launch so the registry entry tracks the
   // persisted setting even across reinstalls or manual registry cleanups.
   applyLaunchAtStartup(Boolean(settingsStore.get().launchAtStartup))
+  registerSyncHandlers()
   overlayWindow = createOverlayWindow()
   tray = createTray(() => overlayWindow)
   startFullscreenWatcher(() => overlayWindow)
+  initSync()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -156,29 +156,29 @@ export function TableControls({ editor, containerRef }: TableControlsProps): Rea
       )}
       {contextMenu && (
         <div
-          className="absolute z-20 flex w-44 flex-col gap-0.5 rounded-[var(--radius-md)] border border-black/10 bg-white/95 p-1 text-xs text-black/80 shadow-xl"
+          className="absolute z-20 flex w-44 flex-col gap-0.5 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 text-xs text-white/85 shadow-2xl"
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onClick={() => setContextMenu(null)}
         >
           <button
-            className="rounded px-2 py-1.5 text-left hover:bg-black/10"
+            className="rounded px-2 py-1.5 text-left hover:bg-white/10"
             onClick={() => editor.chain().focus().addColumnAfter().run()}
           >{t('table.addColumn')}</button>
           <button
-            className="rounded px-2 py-1.5 text-left hover:bg-black/10"
+            className="rounded px-2 py-1.5 text-left hover:bg-white/10"
             onClick={() => editor.chain().focus().deleteColumn().run()}
           >{t('table.deleteColumn')}</button>
           <button
-            className="rounded px-2 py-1.5 text-left hover:bg-black/10"
+            className="rounded px-2 py-1.5 text-left hover:bg-white/10"
             onClick={() => editor.chain().focus().addRowAfter().run()}
           >{t('table.addRow')}</button>
           <button
-            className="rounded px-2 py-1.5 text-left hover:bg-black/10"
+            className="rounded px-2 py-1.5 text-left hover:bg-white/10"
             onClick={() => editor.chain().focus().deleteRow().run()}
           >{t('table.deleteRow')}</button>
-          <span className="my-0.5 h-px bg-black/10" />
+          <span className="my-0.5 h-px bg-white/10" />
           <button
-            className="rounded px-2 py-1.5 text-left text-red-600 hover:bg-black/10"
+            className="rounded px-2 py-1.5 text-left text-red-400 hover:bg-white/10"
             onClick={() => editor.chain().focus().deleteTable().run()}
           >{t('table.deleteTable')}</button>
         </div>

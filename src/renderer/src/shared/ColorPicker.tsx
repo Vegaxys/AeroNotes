@@ -80,7 +80,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
               type="color"
               value={value.type === 'solid' ? (value.value as string) : '#ffffff'}
               onChange={(e) => onChange({ type: 'solid', value: e.target.value })}
-              className="h-8 w-8 cursor-pointer rounded border border-white/15"
+              className="color-swatch-input h-8 w-8 rounded-full border border-white/15"
               aria-label={t('color.custom')}
             />
             {t('color.custom')}
@@ -93,14 +93,14 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
                 type="color"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="h-8 w-8 cursor-pointer rounded border border-white/15"
+                className="color-swatch-input h-8 w-8 rounded-full border border-white/15"
                 aria-label={t('color.gradientFrom')}
               />
               <input
                 type="color"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="h-8 w-8 cursor-pointer rounded border border-white/15"
+                className="color-swatch-input h-8 w-8 rounded-full border border-white/15"
                 aria-label={t('color.gradientTo')}
               />
               <input
@@ -109,7 +109,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps): React.JSX.El
                 max={360}
                 value={customAngle}
                 onChange={(e) => setCustomAngle(Number(e.target.value))}
-                className="w-14 rounded border border-white/15 bg-transparent px-1 py-1 text-xs text-white/70"
+                className="w-14 rounded-[var(--radius-sm)] border border-white/15 bg-neutral-800 px-1.5 py-1 text-xs text-white/80 outline-none focus:border-white/30"
                 aria-label={t('color.gradientAngle')}
               />
               <button

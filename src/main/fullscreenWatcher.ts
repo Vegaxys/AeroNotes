@@ -7,8 +7,10 @@ import { app, type BrowserWindow } from 'electron'
  * child polls Win32: if the foreground window belongs to another process and
  * covers its monitor EXACTLY (borderless fullscreen — a maximized window
  * overshoots its monitor by the invisible resize borders, so it won't match),
- * it prints "1"; the overlay then stops being always-on-top until it prints
- * "0" again. Exclusive-fullscreen games bypass the compositor and cover the
+ * it prints "1"; the overlay is then HIDDEN until it prints "0" again.
+ * Hiding is required: demoting a topmost window with setAlwaysOnTop(false)
+ * re-inserts it at the TOP of the non-topmost band — i.e. still in front of
+ * the game. Exclusive-fullscreen games bypass the compositor and cover the
  * overlay natively either way.
  */
 
@@ -81,6 +83,10 @@ export function startFullscreenWatcher(getOverlayWindow: () => BrowserWindow | n
 
   child.stdout?.setEncoding('utf8')
   let buffer = ''
+  // Only restore what the watcher itself hid — if the user had hidden the
+  // dock (tray/shortcut) before the game started, leaving fullscreen must
+  // not make it pop back up.
+  let hiddenByWatcher = false
   child.stdout?.on('data', (chunk: string) => {
     buffer += chunk
     let newlineIndex = buffer.indexOf('\n')
@@ -90,9 +96,16 @@ export function startFullscreenWatcher(getOverlayWindow: () => BrowserWindow | n
       const overlay = getOverlayWindow()
       if (overlay && !overlay.isDestroyed()) {
         if (line === '1') {
-          overlay.setAlwaysOnTop(false)
+          if (overlay.isVisible()) {
+            hiddenByWatcher = true
+            overlay.hide()
+          }
         } else if (line === '0') {
-          overlay.setAlwaysOnTop(true, 'floating')
+          if (hiddenByWatcher) {
+            hiddenByWatcher = false
+            // showInactive: never steal focus from whatever the user is in.
+            overlay.showInactive()
+          }
         }
       }
       newlineIndex = buffer.indexOf('\n')

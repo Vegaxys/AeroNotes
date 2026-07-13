@@ -12,6 +12,11 @@ extraResources:
   - from: resources/tray-icon.png
     to: tray-icon.png
 
+# Code signing: builds are unsigned by default. To sign, either set
+# CSC_LINK/CSC_KEY_PASSWORD (classic PFX, auto-detected) or add the
+# win.azureSignOptions block — see docs/SIGNING.md for both routes.
+forceCodeSigning: false
+
 win:
   icon: build/icon.ico
   target:

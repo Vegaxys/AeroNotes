@@ -18,6 +18,8 @@ export interface Folder {
   id: string
   name: string
   createdAt: number
+  /** Last rename timestamp — drives last-writer-wins during cloud sync. */
+  updatedAt: number
 }
 
 export interface Note {
@@ -35,6 +37,42 @@ export interface Note {
   alwaysOnTop?: boolean
   createdAt: number
   updatedAt: number
+}
+
+/** A user-created note template (built-ins live in code, never persisted). */
+export interface Template {
+  id: string
+  name: string
+  content: JSONContent
+  createdAt: number
+  updatedAt: number
+}
+
+/** A note as synced to the cloud — per-machine runtime state stripped. */
+export type SyncedNote = Omit<Note, 'isDetached' | 'windowBounds' | 'alwaysOnTop'>
+
+/** Deletion markers, so a note deleted on one machine doesn't resurrect from another. */
+export interface SyncTombstones {
+  notes: Record<string, number>
+  folders: Record<string, number>
+  templates: Record<string, number>
+}
+
+/** The single JSON document stored in the Drive appDataFolder. */
+export interface SyncDocument {
+  schemaVersion: 1
+  notes: Record<string, SyncedNote>
+  folders: Record<string, Folder>
+  /** Absent in docs uploaded before 0.4 — normalize to {} on download. */
+  templates?: Record<string, Template>
+  tombstones: SyncTombstones
+}
+
+export interface SyncStatus {
+  state: 'unconfigured' | 'signed-out' | 'idle' | 'syncing' | 'error'
+  email?: string
+  lastSyncAt?: number
+  error?: string
 }
 
 /** A block being dragged from one note toward another (cross-window transfer). */
@@ -62,4 +100,6 @@ export interface AppSettings {
   locale?: LocalePreference
   /** Electron accelerator toggling the dock (default CommandOrControl+Shift+N). */
   toggleShortcut?: string
+  /** Built-in template ids hidden from the carousel (local preference). */
+  disabledBuiltinTemplates?: string[]
 }

@@ -9,6 +9,7 @@ export function DockNoteList(): React.JSX.Element {
   const searchQuery = useNotesStore((s) => s.searchQuery)
   const reorderNotes = useNotesStore((s) => s.reorderNotes)
   const detachNote = useNotesStore((s) => s.detachNote)
+  const remoteRevisions = useNotesStore((s) => s.remoteRevisions)
   const [draggedId, setDraggedId] = useState<string | null>(null)
 
   const sortedNotes = useMemo(
@@ -67,9 +68,10 @@ export function DockNoteList(): React.JSX.Element {
     <div className="dock-scroll flex-1 space-y-2 overflow-y-auto p-3">
       {filteredNotes.map((note) => (
         <div
-          // isDetached in the key: the embedded editor only reads `content` at
-          // mount, so a redocked note must remount to show its fresh content.
-          key={`${note.id}:${note.isDetached}`}
+          // isDetached and the remote revision in the key: the embedded editor
+          // only reads `content` at mount, so a redocked or cloud-updated note
+          // must remount to show its fresh content.
+          key={`${note.id}:${note.isDetached}:${remoteRevisions[note.id] ?? 0}`}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault()

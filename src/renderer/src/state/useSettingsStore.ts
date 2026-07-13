@@ -8,6 +8,7 @@ interface SettingsState {
   dockExpandedWidth: number
   notesExpanded: boolean
   locale: LocalePreference
+  disabledBuiltinTemplates: string[]
   toggleDockSide: () => void
   toggleDockCollapsed: () => void
   toggleNotesExpanded: () => void
@@ -29,6 +30,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     dockExpandedWidth: 380,
     notesExpanded: true,
     locale: 'system',
+    disabledBuiltinTemplates: [],
     toggleDockSide: () => {
       const dockSide: DockSide = get().dockSide === 'right' ? 'left' : 'right'
       window.aeronotes.setSettings({ dockSide })

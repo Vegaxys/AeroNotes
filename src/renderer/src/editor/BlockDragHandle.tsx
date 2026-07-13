@@ -40,42 +40,78 @@ function measureRelativeTo(dom: HTMLElement, container: HTMLElement): Rect {
 }
 
 /**
- * Finds whichever top-level block's row spans the given container-relative Y.
+ * One-level nesting support: blocks live at the top of the doc, or directly
+ * inside an OPEN foldout's detailsContent. This walks both, with absolute
+ * ProseMirror positions (doc child at O -> its content starts at O+1, so a
+ * grandchild block sits at O+1+childOffset+1+blockOffset).
+ */
+function forEachBlock(
+  editor: Editor,
+  callback: (node: PMNode, pos: number, insideDetails: boolean) => void
+): void {
+  editor.state.doc.forEach((node, offset) => {
+    callback(node, offset, false)
+    if (node.type.name !== 'details' || node.attrs.open !== true) return
+    node.forEach((child, childOffset) => {
+      if (child.type.name !== 'detailsContent') return
+      const contentPos = offset + 1 + childOffset
+      child.forEach((block, blockOffset) => {
+        callback(block, contentPos + 1 + blockOffset, true)
+      })
+    })
+  })
+}
+
+/**
+ * Finds whichever block's row spans the given container-relative Y.
  * Deliberately geometry-only (no `posAtCoords`): posAtCoords resolves to a
  * *text* position and can fail to resolve reliably over a plain paragraph's
- * own whitespace/gutter area (it mostly "worked" for wide blocks like tables
- * or details just because they leave little room to miss), whereas checking
- * "is this Y within this block's own rendered box" works uniformly for every
- * block type regardless of X position.
+ * own whitespace/gutter area, whereas checking "is this Y within this block's
+ * own rendered box" works uniformly for every block type regardless of X.
+ * A block inside an open foldout wins over the foldout itself (deepest match).
  */
 function findBlockAtY(editor: Editor, container: HTMLElement, y: number): { pos: number; rect: Rect } | null {
   let result: { pos: number; rect: Rect } | null = null
-  editor.state.doc.forEach((_node, offset) => {
-    if (result) return
-    const dom = editor.view.nodeDOM(offset)
+  forEachBlock(editor, (_node, pos, insideDetails) => {
+    if (result && !insideDetails) return
+    const dom = editor.view.nodeDOM(pos)
     if (!(dom instanceof HTMLElement)) return
     const rect = measureRelativeTo(dom, container)
     if (y >= rect.top && y <= rect.top + rect.height) {
-      result = { pos: offset, rect }
+      result = { pos, rect }
     }
   })
   return result
 }
 
-/** All the positions a block could be dropped at: before the first block, and after every block. */
-function computeBoundaries(editor: Editor, container: HTMLElement): Boundary[] {
+/**
+ * All the positions a block could be dropped at: before the first block and
+ * after every block — plus, when `includeNested` (i.e. the dragged block is
+ * not itself a foldout), the same inside every open foldout.
+ */
+function computeBoundaries(editor: Editor, container: HTMLElement, includeNested = true): Boundary[] {
   const boundaries: Boundary[] = []
   const firstDom = editor.view.nodeDOM(0)
   if (firstDom instanceof HTMLElement) {
     const rect = measureRelativeTo(firstDom, container)
     boundaries.push({ pos: 0, top: rect.top, left: rect.left, width: rect.width })
   }
-  editor.state.doc.forEach((node, offset) => {
-    const dom = editor.view.nodeDOM(offset)
-    if (dom instanceof HTMLElement) {
-      const rect = measureRelativeTo(dom, container)
-      boundaries.push({ pos: offset + node.nodeSize, top: rect.top + rect.height, left: rect.left, width: rect.width })
+  forEachBlock(editor, (node, pos, insideDetails) => {
+    if (insideDetails && !includeNested) return
+    const dom = editor.view.nodeDOM(pos)
+    if (!(dom instanceof HTMLElement)) return
+    const rect = measureRelativeTo(dom, container)
+    if (insideDetails) {
+      // "Before this block" boundary too — inner blocks have no preceding
+      // top-level boundary to inherit from.
+      boundaries.push({ pos, top: rect.top, left: rect.left, width: rect.width })
     }
+    boundaries.push({
+      pos: pos + node.nodeSize,
+      top: rect.top + rect.height,
+      left: rect.left,
+      width: rect.width
+    })
   })
   return boundaries
 }
@@ -165,10 +201,10 @@ export function BlockDragHandle({ editor, containerRef, noteId }: BlockDragHandl
     const container = containerRef.current
     if (!container) return
 
-    function boundaryAtWindowY(y: number): Boundary | null {
+    function boundaryAtWindowY(y: number, includeNested = true): Boundary | null {
       const containerBox = container!.getBoundingClientRect()
       const relativeY = y - containerBox.top + container!.scrollTop
-      return findNearestBoundary(computeBoundaries(editor, container!), relativeY)
+      return findNearestBoundary(computeBoundaries(editor, container!, includeNested), relativeY)
     }
 
     const unsubscribeOver = window.aeronotes.onBlockDragOver((_x, y) => {
@@ -177,7 +213,12 @@ export function BlockDragHandle({ editor, containerRef, noteId }: BlockDragHandl
     const unsubscribeLeave = window.aeronotes.onBlockDragLeave(() => setDropIndicator(null))
     const unsubscribeDrop = window.aeronotes.onBlockDrop((_x, y, payload) => {
       setDropIndicator(null)
-      const target = boundaryAtWindowY(y)
+      // A foldout must not land inside another foldout.
+      const payloadIsDetails =
+        typeof payload.content === 'object' &&
+        payload.content !== null &&
+        (payload.content as { type?: string }).type === 'details'
+      const target = boundaryAtWindowY(y, !payloadIsDetails)
       if (!target) return
       let node: PMNode
       try {
@@ -220,6 +261,8 @@ export function BlockDragHandle({ editor, containerRef, noteId }: BlockDragHandl
 
     const sourcePos = block.pos
     const sourceSize = node.nodeSize
+    // Dragging a foldout: never offer drop positions inside other foldouts.
+    const includeNestedTargets = node.type.name !== 'details'
     // Serialized up front: the payload must describe the block as it was when
     // the drag started, whatever happens to the doc afterwards.
     const payload: BlockTransferPayload = {
@@ -258,7 +301,7 @@ export function BlockDragHandle({ editor, containerRef, noteId }: BlockDragHandl
           wasOutsideWindow = false
           window.aeronotes.blockDragCancel(noteId)
         }
-        const boundaries = computeBoundaries(editor, container!)
+        const boundaries = computeBoundaries(editor, container!, includeNestedTargets)
         const containerBox = container!.getBoundingClientRect()
         const y = moveEvent.clientY - containerBox.top + container!.scrollTop
         latestTarget = findNearestBoundary(boundaries, y)

@@ -1,6 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { JSONContent } from '@tiptap/core'
-import type { AppSettings, BlockTransferPayload, Folder, Note, NoteColor } from '@shared/types'
+import type {
+  AppSettings,
+  BlockTransferPayload,
+  Folder,
+  Note,
+  NoteColor,
+  SyncStatus,
+  Template
+} from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 
 const api = {
@@ -26,10 +34,32 @@ const api = {
     ipcRenderer.send(IPC_CHANNELS.FOLDER_RENAME, id, name)
   },
   deleteNote: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.NOTE_DELETE, id),
+  getAllTemplates: (): Promise<Template[]> => ipcRenderer.invoke(IPC_CHANNELS.TEMPLATES_GET_ALL),
+  onTemplatesChanged: (callback: (templates: Template[]) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, templates: Template[]): void =>
+      callback(templates)
+    ipcRenderer.on(IPC_CHANNELS.TEMPLATES_CHANGED, listener)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.TEMPLATES_CHANGED, listener)
+  },
+  addTemplate: (name: string, content: JSONContent): Promise<Template> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TEMPLATE_ADD, name, content),
+  updateTemplate: (id: string, patch: { name?: string; content?: JSONContent }): void => {
+    ipcRenderer.send(IPC_CHANNELS.TEMPLATE_UPDATE, id, patch)
+  },
+  deleteTemplate: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TEMPLATE_DELETE, id),
+  openTemplateEditor: (id: string): void => {
+    ipcRenderer.send(IPC_CHANNELS.TEMPLATE_EDITOR_OPEN, id)
+  },
   deleteFolder: (id: string): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.FOLDER_DELETE, id),
   duplicateNote: (id: string): Promise<Note | undefined> =>
     ipcRenderer.invoke(IPC_CHANNELS.NOTE_DUPLICATE, id),
+  copyNoteColor: (color: NoteColor): void => {
+    ipcRenderer.send(IPC_CHANNELS.COLOR_COPY, color)
+  },
+  getCopiedNoteColor: (): Promise<NoteColor | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.COLOR_GET_COPIED),
   moveNoteToFolder: (id: string, folderId: string): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_MOVE_TO_FOLDER, id, folderId)
   },
@@ -43,6 +73,24 @@ const api = {
     ipcRenderer.send(IPC_CHANNELS.APP_QUIT)
   },
   getAppVersion: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.APP_GET_VERSION),
+  syncSignIn: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.SYNC_SIGN_IN),
+  syncSignOut: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.SYNC_SIGN_OUT),
+  syncNow: (): void => {
+    ipcRenderer.send(IPC_CHANNELS.SYNC_NOW)
+  },
+  getSyncStatus: (): Promise<SyncStatus> => ipcRenderer.invoke(IPC_CHANNELS.SYNC_STATUS_GET),
+  onSyncStatusChanged: (callback: (status: SyncStatus) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: SyncStatus): void =>
+      callback(status)
+    ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, listener)
+  },
+  onNotesRemoteApplied: (callback: (noteIds: string[]) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, noteIds: string[]): void =>
+      callback(noteIds)
+    ipcRenderer.on(IPC_CHANNELS.NOTES_REMOTE_APPLIED, listener)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.NOTES_REMOTE_APPLIED, listener)
+  },
   closeAllNoteWindows: (): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_WINDOWS_CLOSE_ALL)
   },
@@ -55,6 +103,15 @@ const api = {
   focusNote: (id: string): void => ipcRenderer.send(IPC_CHANNELS.NOTE_FOCUS, id),
   setNoteAlwaysOnTop: (id: string, alwaysOnTop: boolean): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_SET_ALWAYS_ON_TOP, id, alwaysOnTop)
+  },
+  toggleNoteCollapse: (id: string): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTE_TOGGLE_COLLAPSE, id)
+  },
+  onNoteHeaderContextMenu: (callback: (x: number, y: number) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, x: number, y: number): void =>
+      callback(x, y)
+    ipcRenderer.on(IPC_CHANNELS.NOTE_HEADER_CONTEXT_MENU, listener)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.NOTE_HEADER_CONTEXT_MENU, listener)
   },
   setNoteColor: (id: string, color: NoteColor): void => {
     ipcRenderer.send(IPC_CHANNELS.NOTE_SET_COLOR, id, color)

@@ -33,6 +33,27 @@ body,
   box-sizing: border-box;
 }
 
+/* Native <input type="color"> drawn as a round swatch, matching the preset
+ * color dots (the OS color dialog itself is not stylable). */
+input[type='color'].color-swatch-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='color'].color-swatch-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color'].color-swatch-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 9999px;
+}
+
 /* Themed scrollbar for the dock's dark lists (and any dark scroll area) —
  * mirrors .note-editor's scrollbar, in white instead of black. */
 .dock-scroll {

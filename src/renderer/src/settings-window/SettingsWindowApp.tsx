@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import type { AppSettings } from '@shared/types'
+import type { AppSettings, SyncStatus, Template } from '@shared/types'
 import { resolveLocale, setLocale, t, type LocalePreference } from '@shared/i18n'
+import { BUILTIN_TEMPLATES } from '@shared/builtinTemplates'
 
 /** `WebkitAppRegion` drives native window dragging in Electron but isn't in DOM's CSSProperties. */
 const dragRegion = { WebkitAppRegion: 'drag' } as unknown as CSSProperties
@@ -92,6 +93,158 @@ function globalShortcuts(toggleShortcut: string): Array<[string, string]> {
   return [[formatAccelerator(toggleShortcut), t('settings.shortcut.toggleDock')]]
 }
 
+function TemplatesSection({ settings }: { settings: AppSettings }): React.JSX.Element {
+  const [templates, setTemplates] = useState<Template[]>([])
+
+  useEffect(() => {
+    void window.aeronotes.getAllTemplates().then(setTemplates)
+    return window.aeronotes.onTemplatesChanged(setTemplates)
+  }, [])
+
+  const disabled = settings.disabledBuiltinTemplates ?? []
+  const toggleBuiltin = (id: string): void => {
+    window.aeronotes.setSettings({
+      disabledBuiltinTemplates: disabled.includes(id)
+        ? disabled.filter((entry) => entry !== id)
+        : [...disabled, id]
+    })
+  }
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">
+        {t('settings.templates')}
+      </h2>
+      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-white/10">
+        {BUILTIN_TEMPLATES.map((template, index) => (
+          <div
+            key={template.id}
+            className={`flex items-center justify-between gap-3 px-3 py-1.5 text-xs ${
+              index % 2 === 0 ? 'bg-white/[0.03]' : ''
+            }`}
+          >
+            <span className="text-white/70">{template.name()}</span>
+            <input
+              type="checkbox"
+              checked={!disabled.includes(template.id)}
+              onChange={() => toggleBuiltin(template.id)}
+              className="h-3.5 w-3.5 shrink-0 accent-[var(--color-accent)]"
+              aria-label={template.name()}
+            />
+          </div>
+        ))}
+        {templates.map((template, index) => (
+          <div
+            key={template.id}
+            className={`flex items-center justify-between gap-3 border-t border-white/10 px-3 py-1.5 text-xs ${
+              index === 0 ? '' : ''
+            } ${(BUILTIN_TEMPLATES.length + index) % 2 === 0 ? 'bg-white/[0.03]' : ''}`}
+          >
+            <span className="min-w-0 truncate text-white/85">{template.name}</span>
+            <span className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() => window.aeronotes.openTemplateEditor(template.id)}
+                className="rounded border border-white/15 px-2 py-0.5 text-[11px] text-white/70 hover:bg-white/10"
+              >
+                {t('settings.templates.edit')}
+              </button>
+              <button
+                onClick={() => void window.aeronotes.deleteTemplate(template.id)}
+                className="rounded border border-white/15 px-2 py-0.5 text-[11px] text-red-400/90 hover:bg-white/10"
+              >
+                {t('settings.templates.delete')}
+              </button>
+            </span>
+          </div>
+        ))}
+        {templates.length === 0 && (
+          <p className="border-t border-white/10 px-3 py-2 text-[11px] text-white/35">
+            {t('settings.templates.empty')}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function AccountSection(): React.JSX.Element {
+  const [status, setStatus] = useState<SyncStatus | null>(null)
+  const [isSigningIn, setIsSigningIn] = useState(false)
+
+  useEffect(() => {
+    void window.aeronotes.getSyncStatus().then(setStatus)
+    return window.aeronotes.onSyncStatusChanged(setStatus)
+  }, [])
+
+  const handleSignIn = async (): Promise<void> => {
+    setIsSigningIn(true)
+    try {
+      await window.aeronotes.syncSignIn()
+    } finally {
+      setIsSigningIn(false)
+    }
+  }
+
+  const lastSyncLabel = status?.lastSyncAt
+    ? t('settings.lastSync', {
+        time: new Date(status.lastSyncAt).toLocaleTimeString(undefined, {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      })
+    : t('settings.syncNever')
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">
+        {t('settings.account')}
+      </h2>
+      <div className="space-y-2 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm">
+        {!status || status.state === 'unconfigured' ? (
+          <p className="text-xs text-white/40">{t('settings.syncNotConfigured')}</p>
+        ) : status.state === 'signed-out' ? (
+          <button
+            onClick={() => void handleSignIn()}
+            disabled={isSigningIn}
+            className="w-full rounded-[var(--radius-sm)] bg-white/10 px-3 py-2 text-sm text-white/90 hover:bg-white/20 disabled:opacity-50"
+          >
+            {isSigningIn ? t('settings.signingIn') : t('settings.signInGoogle')}
+          </button>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate">{status.email || 'Google'}</span>
+              <button
+                onClick={() => void window.aeronotes.syncSignOut()}
+                className="shrink-0 rounded px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+              >
+                {t('settings.signOut')}
+              </button>
+            </div>
+            <div className="flex items-start justify-between gap-2 text-xs text-white/50">
+              {/* Errors wrap in full (a truncated Drive error is undebuggable). */}
+              <span className={`min-w-0 ${status.state === 'error' ? 'break-words text-red-400/90' : 'truncate'}`}>
+                {status.state === 'syncing'
+                  ? t('settings.syncing')
+                  : status.state === 'error'
+                    ? `${t('settings.syncError')} — ${status.error ?? ''}`
+                    : lastSyncLabel}
+              </span>
+              <button
+                onClick={() => window.aeronotes.syncNow()}
+                disabled={status.state === 'syncing'}
+                className="shrink-0 rounded border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"
+              >
+                {t('settings.syncNow')}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function markdownShortcuts(): Array<[string, string]> {
   const space = t('settings.key.space')
   return [
@@ -174,6 +327,8 @@ export function SettingsWindowApp(): React.JSX.Element | null {
       </div>
 
       <div className="dock-scroll flex-1 space-y-6 overflow-y-auto p-4">
+        <AccountSection />
+
         <section className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">
             {t('settings.general')}
@@ -210,6 +365,8 @@ export function SettingsWindowApp(): React.JSX.Element | null {
             </select>
           </label>
         </section>
+
+        <TemplatesSection settings={settings} />
 
         <section className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">

@@ -8,3 +8,7 @@ release
 .DS_Store
 .claude/scheduled_tasks.lock
 *.tsbuildinfo
+
+# Google OAuth credentials (public repo — see docs/GOOGLE_CLOUD_SETUP.md)
+.env
+.env.local

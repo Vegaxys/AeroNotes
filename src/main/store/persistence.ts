@@ -1,9 +1,11 @@
 import Store from 'electron-store'
-import type { AppSettings, Folder, Note } from '@shared/types'
+import type { AppSettings, Folder, Note, SyncTombstones, Template } from '@shared/types'
 
 interface PersistedSchema {
   notes: Record<string, Note>
   folders: Record<string, Folder>
+  templates: Record<string, Template>
+  tombstones: SyncTombstones
   settings: AppSettings
 }
 
@@ -16,12 +18,19 @@ const DEFAULT_SETTINGS: AppSettings = {
   lastOpenFolderId: null,
   notesExpanded: true,
   locale: 'system',
-  toggleShortcut: 'CommandOrControl+Shift+N'
+  toggleShortcut: 'CommandOrControl+Shift+N',
+  disabledBuiltinTemplates: []
 }
 
 const diskStore = new Store<PersistedSchema>({
   name: 'aeronotes',
-  defaults: { notes: {}, folders: {}, settings: DEFAULT_SETTINGS }
+  defaults: {
+    notes: {},
+    folders: {},
+    templates: {},
+    tombstones: { notes: {}, folders: {}, templates: {} },
+    settings: DEFAULT_SETTINGS
+  }
 })
 
 export function loadNotes(): Note[] {
@@ -46,6 +55,29 @@ export function saveFolders(folders: Folder[]): void {
     asRecord[folder.id] = folder
   })
   diskStore.set('folders', asRecord)
+}
+
+export function loadTombstones(): SyncTombstones {
+  const tombstones = diskStore.get('tombstones')
+  // Migration: stores written before 0.4 have no template tombstones.
+  tombstones.templates ??= {}
+  return tombstones
+}
+
+export function loadTemplates(): Template[] {
+  return Object.values(diskStore.get('templates'))
+}
+
+export function saveTemplates(templates: Template[]): void {
+  const asRecord: Record<string, Template> = {}
+  templates.forEach((template) => {
+    asRecord[template.id] = template
+  })
+  diskStore.set('templates', asRecord)
+}
+
+export function saveTombstones(tombstones: SyncTombstones): void {
+  diskStore.set('tombstones', tombstones)
 }
 
 export function loadSettings(): AppSettings {
