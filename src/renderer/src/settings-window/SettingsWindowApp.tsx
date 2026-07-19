@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import type { AppSettings, SyncStatus, Template } from '@shared/types'
+import type { AppSettings, DisplayInfo, SyncStatus, Template } from '@shared/types'
 import { resolveLocale, setLocale, t, type LocalePreference } from '@shared/i18n'
 import { BUILTIN_TEMPLATES } from '@shared/builtinTemplates'
 
@@ -86,6 +86,41 @@ function ShortcutRecorder({
     >
       {isRecording ? t('settings.pressShortcut') : formatAccelerator(value)}
     </button>
+  )
+}
+
+/** Monitor picker — only rendered when more than one display is connected. */
+function DisplaySelector({ settings }: { settings: AppSettings }): React.JSX.Element | null {
+  const [displays, setDisplays] = useState<DisplayInfo[]>([])
+
+  useEffect(() => {
+    void window.aeronotes.getDisplays().then(setDisplays)
+  }, [])
+
+  if (displays.length < 2) return null
+
+  const primaryId = displays.find((d) => d.isPrimary)?.id
+  // Saved display, or the primary when nothing is set / it's disconnected.
+  const selectedId =
+    displays.find((d) => d.id === settings.displayId)?.id ?? primaryId ?? displays[0].id
+
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
+      <span>{t('settings.display')}</span>
+      <select
+        value={selectedId}
+        onChange={(e) => window.aeronotes.setSettings({ displayId: Number(e.target.value) })}
+        className="shrink-0 rounded border border-white/15 bg-neutral-800 px-2 py-1 text-xs text-white outline-none focus:border-white/30"
+      >
+        {displays.map((display) => (
+          <option key={display.id} value={display.id}>
+            {display.isPrimary
+              ? t('settings.display.primary', { index: display.index })
+              : t('settings.display.screen', { index: display.index })}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
 
@@ -349,6 +384,7 @@ export function SettingsWindowApp(): React.JSX.Element | null {
               onChange={(accelerator) => window.aeronotes.setSettings({ toggleShortcut: accelerator })}
             />
           </div>
+          <DisplaySelector settings={settings} />
           <label className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
             <span>{t('settings.language')}</span>
             <select

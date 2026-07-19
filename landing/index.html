@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AeroNotes — Vos notes, posées sur votre bureau</title>
+  <meta name="description" content="AeroNotes : sticky notes nouvelle génération pour Windows. Dock discret, éditeur riche façon Notion, notes détachables, sync Google Drive." />
+  <style>
+    :root {
+      --bg: #0c0d12;
+      --surface: rgba(255, 255, 255, 0.06);
+      --surface-strong: rgba(255, 255, 255, 0.1);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: #eef0f6;
+      --text-dim: rgba(238, 240, 246, 0.62);
+      --accent: #7c9dff;
+      --accent-strong: #5b7cff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    /* halos pastel en fond */
+    .glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 { width: 560px; height: 560px; background: #5b7cff; top: -180px; left: -120px; }
+    .glow-2 { width: 480px; height: 480px; background: #f9a8d4; top: 30%; right: -160px; }
+    .glow-3 { width: 520px; height: 520px; background: #6ee7b7; bottom: -200px; left: 20%; opacity: 0.14; }
+
+    .wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1.15rem; letter-spacing: 0.01em; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, #7c9dff, #5b7cff 60%, #a78bfa);
+      box-shadow: 0 4px 18px rgba(91, 124, 255, 0.45);
+      position: relative;
+    }
+    .brand-mark::after {
+      content: ''; position: absolute; inset: 7px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.85);
+      clip-path: polygon(0 0, 100% 0, 100% 62%, 62% 62%, 62% 100%, 0 100%);
+    }
+    nav a {
+      color: var(--text-dim); text-decoration: none; margin-left: 26px; font-size: 0.95rem;
+      transition: color 0.15s;
+    }
+    nav a:hover { color: var(--text); }
+
+    .hero { text-align: center; padding: 84px 0 60px; }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 700; line-height: 1.12; letter-spacing: -0.02em;
+      margin-bottom: 22px;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, #7c9dff, #a78bfa 55%, #f9a8d4);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p.lede {
+      font-size: 1.2rem; color: var(--text-dim); max-width: 640px; margin: 0 auto 38px;
+    }
+    .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 13px 28px; border-radius: 12px;
+      font-size: 1rem; font-weight: 600; text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(91, 124, 255, 0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(91, 124, 255, 0.55); }
+    .btn-ghost {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .btn-ghost:hover { background: var(--surface-strong); }
+    .hero .meta { margin-top: 18px; font-size: 0.85rem; color: var(--text-dim); }
+
+    /* maquette : dock + post-its */
+    .mockup {
+      margin: 70px auto 0; max-width: 900px; height: 420px; position: relative;
+      border-radius: 20px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .mock-dock {
+      position: absolute; right: 18px; top: 18px; bottom: 18px; width: 220px;
+      border-radius: 16px;
+      background: rgba(23, 23, 23, 0.72);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      padding: 14px 12px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .mock-search {
+      height: 30px; border-radius: 8px; background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .mock-card {
+      border-radius: 10px; padding: 10px 12px; color: rgba(0,0,0,0.75);
+      font-size: 0.78rem; line-height: 1.45; font-weight: 500;
+    }
+    .mock-card b { display: block; font-size: 0.82rem; margin-bottom: 3px; color: rgba(0,0,0,0.85); }
+    .note-yellow { background: #fef08a; }
+    .note-green { background: #bbf7d0; }
+    .note-grad-pink { background: linear-gradient(135deg, #f9a8d4, #a78bfa); }
+    .sticky {
+      position: absolute; border-radius: 12px; padding: 14px 16px;
+      color: rgba(0,0,0,0.78); font-size: 0.85rem; line-height: 1.5;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .sticky b { display: block; margin-bottom: 6px; color: rgba(0,0,0,0.88); }
+    .sticky-1 { left: 60px; top: 56px; width: 250px; background: #bfdbfe; transform: rotate(-1.5deg); }
+    .sticky-2 { left: 200px; top: 210px; width: 270px; background: linear-gradient(135deg, #fde68a, #fca5a5); transform: rotate(1deg); }
+    .sticky ul { list-style: none; }
+    .sticky li::before { content: '☐ '; }
+    .sticky li.done { text-decoration: line-through; opacity: 0.6; }
+    .sticky li.done::before { content: '☑ '; }
+
+    section { padding: 80px 0; }
+    .section-title { text-align: center; font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 12px; }
+    .section-sub { text-align: center; color: var(--text-dim); max-width: 560px; margin: 0 auto 52px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 26px 24px;
+      backdrop-filter: blur(12px);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .card:hover { background: var(--surface-strong); transform: translateY(-3px); }
+    .card .icon {
+      width: 42px; height: 42px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; margin-bottom: 16px;
+    }
+    .icon-blue { background: linear-gradient(135deg, rgba(124,157,255,0.35), rgba(91,124,255,0.25)); }
+    .icon-pink { background: linear-gradient(135deg, rgba(249,168,212,0.35), rgba(167,139,250,0.25)); }
+    .icon-green { background: linear-gradient(135deg, rgba(110,231,183,0.35), rgba(147,197,253,0.25)); }
+    .card h3 { font-size: 1.08rem; margin-bottom: 8px; font-weight: 600; }
+    .card p { color: var(--text-dim); font-size: 0.93rem; }
+
+    .final-cta {
+      text-align: center;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: linear-gradient(160deg, rgba(124,157,255,0.12), rgba(167,139,250,0.06));
+      padding: 70px 30px;
+    }
+    .final-cta h2 { font-size: 2rem; font-weight: 700; margin-bottom: 14px; }
+    .final-cta p { color: var(--text-dim); margin-bottom: 30px; }
+
+    footer {
+      padding: 36px 0 44px; text-align: center;
+      color: var(--text-dim); font-size: 0.85rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin-top: 40px;
+    }
+
+    @media (max-width: 720px) {
+      .mockup { height: 520px; }
+      .mock-dock { width: 180px; }
+      .sticky-1 { left: 20px; }
+      .sticky-2 { left: 40px; top: 240px; }
+      nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="glow glow-3"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="brand-mark"></span>AeroNotes</div>
+      <nav>
+        <a href="#features">Fonctionnalités</a>
+        <a href="#editor">Éditeur</a>
+        <a href="#download">Télécharger</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Vos notes, posées<br /><span class="grad">sur votre bureau</span></h1>
+      <p class="lede">
+        Un dock discret au bord de l'écran, des post-its qui deviennent de vraies fenêtres,
+        et un éditeur riche façon Notion. AeroNotes réinvente les sticky notes sur Windows.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">Télécharger pour Windows</a>
+        <a class="btn btn-ghost" href="#features">Découvrir</a>
+      </div>
+      <p class="meta">Gratuit · Windows 10/11 · Ctrl+Shift+N et vos notes apparaissent</p>
+
+      <div class="mockup" aria-hidden="true">
+        <div class="sticky sticky-1">
+          <b>🛒 Courses</b>
+          <ul>
+            <li class="done">Café</li>
+            <li>Pain</li>
+            <li>Avocats</li>
+          </ul>
+        </div>
+        <div class="sticky sticky-2">
+          <b>💡 Idées projet</b>
+          Brancher l'API météo, revoir la palette du dashboard, <i>demander à Léa pour le logo…</i>
+        </div>
+        <div class="mock-dock">
+          <div class="mock-search"></div>
+          <div class="mock-card note-yellow"><b>Réunion lundi</b>Préparer la démo 0.4 + notes de release</div>
+          <div class="mock-card note-green"><b>Perso</b>Appeler le garage avant vendredi</div>
+          <div class="mock-card note-grad-pink"><b>Inspiration</b>« Simple, mais pas simpliste »</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <h2 class="section-title">Toujours là, jamais dans le passage</h2>
+      <p class="section-sub">AeroNotes vit en transparence par-dessus votre bureau : cliquable uniquement là où il le faut.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="icon icon-blue">🪟</div>
+          <h3>Dock rétractable</h3>
+          <p>Un dock vertical en verre dépoli, à gauche ou à droite de l'écran. Il se replie en une fine languette et s'efface même devant vos jeux plein écran.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-pink">📌</div>
+          <h3>Notes détachables</h3>
+          <p>Glissez une note hors du dock : elle devient une vraie fenêtre, redimensionnable, épinglable au premier plan, repliable en barre de titre d'un double-clic.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-green">🎨</div>
+          <h3>Couleurs & dégradés</h3>
+          <p>Pastels classiques ou dégradés personnalisés : chaque note a sa personnalité. Copiez-collez une couleur d'une note à l'autre.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-blue">☁️</div>
+          <h3>Sync Google Drive</h3>
+          <p>Vos notes, dossiers et modèles vous suivent d'une machine à l'autre — stockés dans votre propre Drive, jamais ailleurs.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-pink">🗂️</div>
+          <h3>Dossiers & recherche</h3>
+          <p>Rangez vos notes par dossier, retrouvez-les instantanément à la recherche. AeroNotes rouvre là où vous étiez.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-green">⚡</div>
+          <h3>Un raccourci, et c'est là</h3>
+          <p>Ctrl+Shift+N (configurable) fait apparaître ou disparaître le dock. Lancement avec Windows, icône dans la zone de notification.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="editor">
+      <h2 class="section-title">Un vrai éditeur, pas un bloc-notes</h2>
+      <p class="section-sub">Tapez en Markdown, il se met en forme tout seul. Tout ce que vous attendez d'un éditeur moderne, dans un post-it.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="icon icon-blue">✍️</div>
+          <h3>Markdown automatique</h3>
+          <p><code># titre</code>, <code>**gras**</code>, <code>- liste</code>, <code>[] tâche</code> — la mise en forme s'applique pendant que vous tapez, sans mode aperçu.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-pink">🧱</div>
+          <h3>Blocs façon Notion</h3>
+          <p>Checklists, toggles repliables, tableaux, images. Réordonnez les blocs à la poignée — et faites-les glisser <em>d'un post-it à l'autre</em>.</p>
+        </div>
+        <div class="card">
+          <div class="icon icon-green">📋</div>
+          <h3>Templates</h3>
+          <p>Toute note vide propose vos modèles : liste de courses, compte-rendu, ou n'importe quelle note transformée en template en un clic.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="final-cta">
+        <h2>Essayez AeroNotes aujourd'hui</h2>
+        <p>Gratuit, léger, en français et en anglais. Vos notes n'attendent que vous.</p>
+        <a class="btn btn-primary" href="#">Télécharger AeroNotes pour Windows</a>
+      </div>
+    </section>
+
+    <footer>
+      AeroNotes — sticky notes nouvelle génération pour Windows.
+    </footer>
+  </div>
+</body>
+</html>

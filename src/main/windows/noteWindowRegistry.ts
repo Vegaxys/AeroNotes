@@ -1,8 +1,6 @@
 import { BrowserWindow, screen } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
-import { broadcastSettings } from '../ipc/settingsHandlers'
 import { notesStore } from '../store/notesStore'
-import { settingsStore } from '../store/settingsStore'
 import { createNoteWindow, type ScreenPosition } from './noteWindow'
 
 const noteWindows = new Map<string, BrowserWindow>()
@@ -103,34 +101,6 @@ export function toggleNoteCollapse(id: string): void {
   }
 }
 
-/** Screen-edge zone around the collapsed dock's toggle button (which is ~96px tall). */
-const DOCK_TAB_ZONE_WIDTH_PX = 40
-const DOCK_TAB_ZONE_HALF_HEIGHT_PX = 80
-
-/**
- * Dragging a detached post-it onto the collapsed dock's toggle button expands
- * the dock, so the note can be dropped back in without a separate click.
- * Called on every window `move` event; the dockCollapsed guard makes it a
- * cheap no-op while the dock is already open.
- */
-function expandDockIfDraggedOntoTab(): void {
-  const settings = settingsStore.get()
-  if (!settings.dockCollapsed) return
-
-  const cursor = screen.getCursorScreenPoint()
-  const bounds = screen.getPrimaryDisplay().bounds
-  const nearEdge =
-    settings.dockSide === 'right'
-      ? cursor.x >= bounds.x + bounds.width - DOCK_TAB_ZONE_WIDTH_PX
-      : cursor.x <= bounds.x + DOCK_TAB_ZONE_WIDTH_PX
-  const nearCenter = Math.abs(cursor.y - (bounds.y + bounds.height / 2)) <= DOCK_TAB_ZONE_HALF_HEIGHT_PX
-
-  if (nearEdge && nearCenter) {
-    settingsStore.update({ dockCollapsed: false })
-    broadcastSettings()
-  }
-}
-
 export function detachNote(id: string, onChanged: () => void, dropPosition?: ScreenPosition): void {
   if (noteWindows.has(id)) {
     focusNote(id)
@@ -152,7 +122,6 @@ export function detachNote(id: string, onChanged: () => void, dropPosition?: Scr
   }
   window.on('moved', persistBounds)
   window.on('resized', persistBounds)
-  window.on('move', expandDockIfDraggedOntoTab)
   window.on('closed', () => {
     noteWindows.delete(id)
     clearCollapseState(id)

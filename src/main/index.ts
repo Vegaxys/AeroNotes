@@ -24,7 +24,7 @@ app.whenReady().then(() => {
   registerImageProtocol()
   registerOverlayHandlers(() => overlayWindow)
   registerNotesHandlers()
-  registerSettingsHandlers()
+  registerSettingsHandlers(() => overlayWindow)
   registerShellHandlers()
   registerImageHandlers()
   registerBlockHandlers()

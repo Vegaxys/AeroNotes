@@ -46,6 +46,7 @@ export const IPC_CHANNELS = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_CHANGED: 'settings:changed',
+  DISPLAYS_GET: 'displays:get',
   SHELL_OPEN_PATH: 'shell:open-path',
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
   DIALOG_PICK_PATH: 'dialog:pick-path',

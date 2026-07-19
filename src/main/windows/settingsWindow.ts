@@ -1,5 +1,6 @@
 import { join } from 'path'
 import { BrowserWindow } from 'electron'
+import { getAppIconPath } from '../appIcon'
 
 let settingsWindow: BrowserWindow | null = null
 
@@ -14,6 +15,7 @@ export function openSettingsWindow(): void {
   settingsWindow = new BrowserWindow({
     width: 420,
     height: 540,
+    icon: getAppIconPath(),
     frame: false,
     resizable: false,
     maximizable: false,

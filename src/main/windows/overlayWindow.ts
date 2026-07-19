@@ -1,5 +1,25 @@
 import { join } from 'path'
 import { BrowserWindow, screen } from 'electron'
+import { settingsStore } from '../store/settingsStore'
+
+/**
+ * The bounds of the display the overlay should cover: the one saved in
+ * settings, or the primary display when none is set or the saved one is no
+ * longer connected.
+ */
+function resolveOverlayBounds(): Electron.Rectangle {
+  const { displayId } = settingsStore.get()
+  const target =
+    displayId != null ? screen.getAllDisplays().find((d) => d.id === displayId) : undefined
+  return (target ?? screen.getPrimaryDisplay()).bounds
+}
+
+/** Moves the overlay to cover the display currently selected in settings. */
+export function repositionOverlayToDisplay(window: BrowserWindow): void {
+  if (window.isDestroyed()) return
+  const { x, y, width, height } = resolveOverlayBounds()
+  window.setBounds({ x, y, width, height })
+}
 
 /**
  * Transparent frameless windows on Windows sometimes never get an initial
@@ -17,7 +37,7 @@ function forceInitialPaint(window: BrowserWindow): void {
 }
 
 export function createOverlayWindow(): BrowserWindow {
-  const { x, y, width, height } = screen.getPrimaryDisplay().bounds
+  const { x, y, width, height } = resolveOverlayBounds()
 
   const window = new BrowserWindow({
     x,

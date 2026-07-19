@@ -1,10 +1,21 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
-import type { AppSettings } from '@shared/types'
+import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import type { AppSettings, DisplayInfo } from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { resolveLocale, setLocale } from '@shared/i18n'
 import { applyLaunchAtStartup } from '../startup'
 import { settingsStore } from '../store/settingsStore'
 import { applyToggleShortcut, DEFAULT_TOGGLE_SHORTCUT, refreshTrayMenu } from '../tray'
+import { repositionOverlayToDisplay } from '../windows/overlayWindow'
+
+/** The connected monitors, primary first, for the settings display picker. */
+function listDisplays(): DisplayInfo[] {
+  const primaryId = screen.getPrimaryDisplay().id
+  return screen.getAllDisplays().map((display, index) => ({
+    id: display.id,
+    index: index + 1,
+    isPrimary: display.id === primaryId
+  }))
+}
 
 export function broadcastSettings(): void {
   const settings = settingsStore.get()
@@ -13,8 +24,10 @@ export function broadcastSettings(): void {
   })
 }
 
-export function registerSettingsHandlers(): void {
+export function registerSettingsHandlers(getOverlayWindow: () => BrowserWindow | null): void {
   ipcMain.handle(IPC_CHANNELS.SETTINGS_GET, () => settingsStore.get())
+
+  ipcMain.handle(IPC_CHANNELS.DISPLAYS_GET, () => listDisplays())
 
   ipcMain.handle(IPC_CHANNELS.APP_GET_VERSION, () => app.getVersion())
 
@@ -41,6 +54,11 @@ export function registerSettingsHandlers(): void {
         settingsStore.update({ toggleShortcut: previousShortcut })
         applyToggleShortcut(previousShortcut)
       }
+    }
+    // Display change: move the dock overlay onto the newly chosen monitor.
+    if (patch.displayId !== undefined) {
+      const overlay = getOverlayWindow()
+      if (overlay) repositionOverlayToDisplay(overlay)
     }
     broadcastSettings()
   })

@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { BrowserWindow, screen } from 'electron'
 import type { Note } from '@shared/types'
+import { getAppIconPath } from '../appIcon'
 
 const DEFAULT_WIDTH = 420
 const DEFAULT_HEIGHT = 520
@@ -49,6 +50,7 @@ export function createNoteWindow(note: Note, dropPosition?: ScreenPosition): Bro
 
   const window = new BrowserWindow({
     ...bounds,
+    icon: getAppIconPath(),
     minWidth: 260,
     minHeight: 220,
     frame: false,

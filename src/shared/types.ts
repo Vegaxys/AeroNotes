@@ -86,6 +86,14 @@ export interface BlockTransferPayload {
 
 export type DockSide = 'left' | 'right'
 
+/** A connected monitor, as offered in the settings display picker. */
+export interface DisplayInfo {
+  id: number
+  /** 1-based index for a human-friendly "Screen N" label. */
+  index: number
+  isPrimary: boolean
+}
+
 export interface AppSettings {
   dockSide: DockSide
   dockCollapsed: boolean

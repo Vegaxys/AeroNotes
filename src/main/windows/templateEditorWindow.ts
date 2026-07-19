@@ -1,5 +1,6 @@
 import { join } from 'path'
 import { BrowserWindow } from 'electron'
+import { getAppIconPath } from '../appIcon'
 
 const editorWindows = new Map<string, BrowserWindow>()
 
@@ -28,6 +29,7 @@ export function openTemplateEditorWindow(templateId: string): void {
   const window = new BrowserWindow({
     width: 460,
     height: 560,
+    icon: getAppIconPath(),
     minWidth: 300,
     minHeight: 260,
     frame: false,

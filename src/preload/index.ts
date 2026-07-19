@@ -3,6 +3,7 @@ import type { JSONContent } from '@tiptap/core'
 import type {
   AppSettings,
   BlockTransferPayload,
+  DisplayInfo,
   Folder,
   Note,
   NoteColor,
@@ -123,6 +124,7 @@ const api = {
     ipcRenderer.send(IPC_CHANNELS.NOTES_REORDER, orderedIds)
   },
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET),
+  getDisplays: (): Promise<DisplayInfo[]> => ipcRenderer.invoke(IPC_CHANNELS.DISPLAYS_GET),
   setSettings: (patch: Partial<AppSettings>): void => {
     ipcRenderer.send(IPC_CHANNELS.SETTINGS_SET, patch)
   },
