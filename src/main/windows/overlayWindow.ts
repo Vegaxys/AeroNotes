@@ -6,11 +6,34 @@ import { settingsStore } from '../store/settingsStore'
  * The bounds of the display the overlay should cover: the one saved in
  * settings, or the primary display when none is set or the saved one is no
  * longer connected.
+ *
+ * Matching happens in two passes because Electron regenerates `Display.id`
+ * every session on Windows: the id only works within the current session, so
+ * after a reboot we fall back to the stable label + geometry descriptor.
  */
 function resolveOverlayBounds(): Electron.Rectangle {
-  const { displayId } = settingsStore.get()
-  const target =
-    displayId != null ? screen.getAllDisplays().find((d) => d.id === displayId) : undefined
+  const { displayId, displayTarget } = settingsStore.get()
+  const displays = screen.getAllDisplays()
+
+  let target = displayId != null ? displays.find((d) => d.id === displayId) : undefined
+
+  if (!target && displayTarget) {
+    const { label, bounds } = displayTarget
+    // Prefer an exact label + geometry match; fall back to label alone (the
+    // monitor was rearranged) or geometry alone (label unavailable/changed).
+    target =
+      displays.find(
+        (d) =>
+          d.label === label &&
+          d.bounds.x === bounds.x &&
+          d.bounds.y === bounds.y &&
+          d.bounds.width === bounds.width &&
+          d.bounds.height === bounds.height
+      ) ??
+      displays.find((d) => label !== '' && d.label === label) ??
+      displays.find((d) => d.bounds.x === bounds.x && d.bounds.y === bounds.y)
+  }
+
   return (target ?? screen.getPrimaryDisplay()).bounds
 }
 

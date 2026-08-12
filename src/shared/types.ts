@@ -99,6 +99,15 @@ export interface AppSettings {
   dockCollapsed: boolean
   dockExpandedWidth: number
   displayId?: number
+  /**
+   * Stable descriptor of the chosen display, used to re-find it after a reboot.
+   * Electron regenerates `Display.id` each session on Windows, so the id alone
+   * can't survive a restart; the label + geometry can.
+   */
+  displayTarget?: {
+    label: string
+    bounds: { x: number; y: number; width: number; height: number }
+  }
   launchAtStartup?: boolean
   /** Folder the dock had open on last quit; restored at launch. null = folder list. */
   lastOpenFolderId?: string | null

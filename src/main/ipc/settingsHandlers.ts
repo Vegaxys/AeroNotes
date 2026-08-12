@@ -33,6 +33,18 @@ export function registerSettingsHandlers(getOverlayWindow: () => BrowserWindow |
 
   ipcMain.on(IPC_CHANNELS.SETTINGS_SET, (_event, patch: Partial<AppSettings>) => {
     const previousShortcut = settingsStore.get().toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT
+    // A chosen display id is only meaningful this session (Windows regenerates
+    // it on reboot); capture a stable label + geometry descriptor alongside it
+    // so the overlay can re-find the monitor after a restart.
+    if (patch.displayId !== undefined) {
+      const display = screen.getAllDisplays().find((d) => d.id === patch.displayId)
+      patch = {
+        ...patch,
+        displayTarget: display
+          ? { label: display.label, bounds: { ...display.bounds } }
+          : undefined
+      }
+    }
     const settings = settingsStore.update(patch)
     // Any renderer (e.g. the settings window) can flip this; keep the Windows
     // login item in sync with the persisted value.
