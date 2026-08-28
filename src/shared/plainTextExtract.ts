@@ -9,6 +9,11 @@ export function extractPlainText(content: JSONContent | undefined): string {
     if (node.text) {
       text += node.text
     }
+    // A [[note link]] carries its label in an attribute, not in a text node —
+    // without this, searching a note's title would not find the notes linking to it.
+    if (node.type === 'noteLink' && typeof node.attrs?.title === 'string') {
+      text += node.attrs.title + ' '
+    }
     if (node.type === 'paragraph' || node.type === 'heading') {
       text += ' '
     }

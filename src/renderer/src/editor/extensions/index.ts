@@ -17,9 +17,17 @@ import { SlashCommand } from './slashCommand'
 import { LocalLink } from './localLink'
 import { WebLinkClick } from './webLinkClick'
 import { HighlightClick, type HighlightClickOptions } from './highlightClick'
+import { NoteLink } from './noteLink'
 import { AlphaOrderedList } from './alphaOrderedList'
 
-export function createNoteEditorExtensions(options: HighlightClickOptions = {}): AnyExtension[] {
+interface NoteEditorExtensionOptions extends HighlightClickOptions {
+  /** Note being edited — the `[[` picker offers its folder's other notes. */
+  noteId?: string
+}
+
+export function createNoteEditorExtensions(
+  options: NoteEditorExtensionOptions = {}
+): AnyExtension[] {
   return [
     StarterKit.configure({
       link: {
@@ -54,6 +62,7 @@ export function createNoteEditorExtensions(options: HighlightClickOptions = {}):
     Highlight.configure({ multicolor: true }),
     HighlightClick.configure({ onHighlightClick: options.onHighlightClick }),
     LocalLink,
+    NoteLink.configure({ noteId: options.noteId ?? '' }),
     WebLinkClick,
     AlphaOrderedList,
     SlashCommand

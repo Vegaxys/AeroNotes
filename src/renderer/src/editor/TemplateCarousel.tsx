@@ -6,6 +6,16 @@ import { useSettingsStore } from '@renderer/state/useSettingsStore'
 
 interface TemplateCarouselProps {
   onApply: (content: JSONContent) => void
+  /** Quick capture: offer the clipboard as the first "template". */
+  showClipboardPill?: boolean
+}
+
+/** Clipboard text as a document: one paragraph per line, blank lines kept. */
+function clipboardTextToDoc(text: string): JSONContent {
+  const paragraphs = text.split(/\r?\n/).map((line) =>
+    line.trim() === '' ? { type: 'paragraph' } : { type: 'paragraph', content: [{ type: 'text', text: line }] }
+  )
+  return { type: 'doc', content: paragraphs }
 }
 
 function Pill({
@@ -33,7 +43,10 @@ function Pill({
  * the (empty) content; the note's colors are untouched. The ⋯ pill opens the
  * settings window on template management.
  */
-export function TemplateCarousel({ onApply }: TemplateCarouselProps): React.JSX.Element {
+export function TemplateCarousel({
+  onApply,
+  showClipboardPill
+}: TemplateCarouselProps): React.JSX.Element {
   const userTemplates = useNotesStore((s) => s.templates)
   const disabledBuiltins = useSettingsStore((s) => s.disabledBuiltinTemplates)
 
@@ -45,6 +58,18 @@ export function TemplateCarousel({ onApply }: TemplateCarouselProps): React.JSX.
         data-mouse-live=""
         className="dock-scroll pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full p-1.5"
       >
+        {showClipboardPill && (
+          <Pill
+            onClick={() => {
+              void window.aeronotes.readClipboardText().then((text) => {
+                if (text.trim() !== '') onApply(clipboardTextToDoc(text))
+              })
+            }}
+            title={t('template.clipboardTitle')}
+          >
+            {t('template.clipboard')}
+          </Pill>
+        )}
         {builtins.map((template) => (
           <Pill key={template.id} onClick={() => onApply(template.content())}>
             {template.name()}

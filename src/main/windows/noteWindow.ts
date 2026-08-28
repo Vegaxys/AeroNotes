@@ -26,7 +26,16 @@ function forceInitialPaint(window: BrowserWindow): void {
   })
 }
 
-export function createNoteWindow(note: Note, dropPosition?: ScreenPosition): BrowserWindow {
+export interface NoteWindowOptions {
+  /** Opened by the global quick-capture shortcut (adds the clipboard pill). */
+  quickCapture?: boolean
+}
+
+export function createNoteWindow(
+  note: Note,
+  dropPosition?: ScreenPosition,
+  options?: NoteWindowOptions
+): BrowserWindow {
   const bounds = note.windowBounds ?? {
     x: 160,
     y: 160,
@@ -76,12 +85,16 @@ export function createNoteWindow(note: Note, dropPosition?: ScreenPosition): Bro
 
   forceInitialPaint(window)
 
+  const query: Record<string, string> = { id: note.id }
+  if (options?.quickCapture) query.quickCapture = '1'
+  const search = new URLSearchParams(query).toString()
+
   const rendererUrl = process.env['ELECTRON_RENDERER_URL']
   if (rendererUrl) {
-    window.loadURL(`${rendererUrl}/note.html?id=${note.id}`)
+    window.loadURL(`${rendererUrl}/note.html?${search}`)
     window.webContents.openDevTools({ mode: 'detach' })
   } else {
-    window.loadFile(join(__dirname, '../renderer/note.html'), { query: { id: note.id } })
+    window.loadFile(join(__dirname, '../renderer/note.html'), { query })
   }
 
   return window

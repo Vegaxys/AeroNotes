@@ -6,7 +6,10 @@ Application de sticky notes avancée pour Windows : un overlay transparent plein
 
 ### Dock et overlay
 - **Overlay transparent plein écran** avec click-through natif : le bureau et les autres fenêtres restent utilisables partout sauf sur le dock.
-- **Dock vertical** repositionnable à gauche ou à droite, rétractable, avec recherche et bouton d'ajout.
+- **Dock vertical** repositionnable à gauche ou à droite, rétractable, avec recherche, bouton d'ajout et **auto-hide optionnel** (le dock se retire jusqu'à ce que le curseur touche le bord de l'écran).
+- **Tri et épinglage** : ordre manuel (glisser-déposer), par date de création, de modification ou par nom ; les notes épinglées (⭐) restent en tête. Déplacer une note à la main rebascule automatiquement en tri manuel.
+- **Corbeille** : une note supprimée reste restaurable 30 jours (menu ⋯ du dock) avant purge automatique.
+- **Barre de progression des checklists** sur la carte d'une note qui en contient une.
 - **Édition directement dans le dock** : chaque carte embarque l'éditeur complet (mode « Expand notes »), ou un aperçu compact de 3 lignes en vue repliée.
 - **Dossiers** (un niveau) : la racine liste les dossiers, chaque dossier contient ses notes ; le dernier dossier ouvert est mémorisé.
 - **Effacement automatique devant les jeux plein écran** : le dock se masque quand une application plein écran passe au premier plan, et revient ensuite.
@@ -18,6 +21,8 @@ Application de sticky notes avancée pour Windows : un overlay transparent plein
 - Poignée de glisser-déposer par bloc, avec imbrication dans les toggles et **transfert de blocs entre fenêtres de notes**.
 - Liens web cliquables, liens vers fichiers/dossiers locaux (ouverture Explorateur), images collées/glissées ou importées.
 - **Templates** : modèles intégrés + modèles créés depuis n'importe quelle note, proposés en carrousel dans toute note vide, gérables (édition/suppression) depuis les Paramètres.
+- **Liens entre notes** en `[[titre]]` : autocomplétion des notes du dossier, création de la note manquante à la volée, clic pour l'ouvrir — et la recherche trouve une note par les liens qui pointent vers elle.
+- **Export d'une note en Markdown** (checklists, tableaux, toggles et liens compris).
 
 ### Fenêtres de notes
 - **Notes détachables** : une note peut sortir du dock (glisser-déposer au curseur ou menu contextuel) pour devenir une vraie fenêtre redimensionnable, avec option « toujours au premier plan ».
@@ -29,7 +34,9 @@ Application de sticky notes avancée pour Windows : un overlay transparent plein
 - **Interface en français et en anglais** (suit la langue système par défaut, sélecteur dans les Paramètres).
 - **Fenêtre Paramètres** : compte Google, langue, raccourci global configurable, démarrage avec Windows, templates, référence des raccourcis.
 - **Persistance locale** (notes, dossiers, templates, couleurs, préférences) via `electron-store`.
-- **Icône dans la zone de notification** avec raccourci global configurable (`Ctrl+Shift+N` par défaut) pour afficher/masquer le dock.
+- **Capture rapide** au raccourci global (`Ctrl+Shift+Space` par défaut) : un post-it s'ouvre par-dessus tout, avec une pastille « Presse-papier » pour y coller le presse-papier ; Échap ferme et n'enregistre rien si rien n'a été écrit.
+- **Rappels** : une échéance par note, notification Windows cliquable qui ouvre la note, report de 10 minutes, rattrapage des rappels échus au démarrage.
+- **Icône dans la zone de notification** avec raccourcis globaux configurables (`Ctrl+Shift+N` pour le dock, `Ctrl+Shift+Space` pour la capture rapide).
 
 ## Stack technique
 

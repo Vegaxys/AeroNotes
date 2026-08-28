@@ -90,7 +90,7 @@ export function DockFolderList(): React.JSX.Element {
   }, [folders, searchQuery])
 
   return (
-    <div className="dock-scroll flex-1 space-y-2 overflow-y-auto p-3">
+    <div className="dock-scroll dock-scroll-list flex-1 space-y-2 overflow-y-auto p-3">
       {filteredFolders.map((folder) => (
         <FolderCard
           key={folder.id}

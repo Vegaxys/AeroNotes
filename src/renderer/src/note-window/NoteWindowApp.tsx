@@ -12,6 +12,11 @@ function getTemplateIdFromUrl(): string | null {
   return new URLSearchParams(window.location.search).get('templateId')
 }
 
+/** Window opened by the global quick-capture shortcut. */
+function isQuickCapture(): boolean {
+  return new URLSearchParams(window.location.search).get('quickCapture') === '1'
+}
+
 export function NoteWindowApp(): React.JSX.Element | null {
   const templateId = getTemplateIdFromUrl()
   const noteId = getNoteIdFromUrl()
@@ -55,6 +60,10 @@ export function NoteWindowApp(): React.JSX.Element | null {
         content={note.content}
         onChange={(content) => updateNoteContent(note.id, content)}
         showTemplates
+        // A window that opens on an empty note was just created from the dock's
+        // + button (or quick capture): start typing right away.
+        autofocus={!note.contentPreview}
+        quickCapture={isQuickCapture()}
       />
     </NoteFrame>
   )

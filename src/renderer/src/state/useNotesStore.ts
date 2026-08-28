@@ -4,11 +4,16 @@ import type { Folder, Note, NoteColor, Template } from '@shared/types'
 import { t } from '@shared/i18n'
 
 interface NotesState {
+  /** Active notes only — trashed ones are split out into `trash`. */
   notes: Note[]
+  trash: Note[]
   folders: Folder[]
   templates: Template[]
   /** null = root (folder list); otherwise the opened folder. Dock-local, not persisted. */
   currentFolderId: string | null
+  /** The dock is showing the trash instead of the folder/note list. */
+  trashView: boolean
+  setTrashView: (trashView: boolean) => void
   /** Bumped when a note changes from the cloud — keys editor remounts. */
   remoteRevisions: Record<string, number>
   searchQuery: string
@@ -19,6 +24,12 @@ interface NotesState {
   addFolder: () => void
   renameFolder: (id: string, name: string) => void
   deleteNote: (id: string) => void
+  restoreNote: (id: string) => void
+  purgeNote: (id: string) => void
+  emptyTrash: () => void
+  setNotePinned: (id: string, pinned: boolean) => void
+  setNoteDueAt: (id: string, dueAt: number | undefined) => void
+  exportNoteMarkdown: (id: string) => void
   deleteFolder: (id: string) => void
   createTemplateFromNote: (note: Note) => void
   duplicateNote: (id: string) => void
@@ -34,8 +45,16 @@ interface NotesState {
 }
 
 export const useNotesStore = create<NotesState>((set, get) => {
-  window.aeronotes.getAllNotes().then((notes) => set({ notes }))
-  window.aeronotes.onNotesChanged((notes) => set({ notes }))
+  // The main process broadcasts every note, trashed ones included (it must, to
+  // persist and sync them). Split once here so no view has to remember to
+  // filter them out.
+  const applyNotes = (all: Note[]): void =>
+    set({
+      notes: all.filter((note) => !note.deletedAt),
+      trash: all.filter((note) => note.deletedAt)
+    })
+  window.aeronotes.getAllNotes().then(applyNotes)
+  window.aeronotes.onNotesChanged(applyNotes)
   window.aeronotes.getAllTemplates().then((templates) => set({ templates }))
   window.aeronotes.onTemplatesChanged((templates) => set({ templates }))
   window.aeronotes.onFoldersChanged((folders) => {
@@ -64,9 +83,12 @@ export const useNotesStore = create<NotesState>((set, get) => {
 
   return {
     notes: [],
+    trash: [],
     folders: [],
     templates: [],
     currentFolderId: null,
+    trashView: false,
+    setTrashView: (trashView) => set({ trashView, searchQuery: '' }),
     remoteRevisions: {},
     searchQuery: '',
     setSearchQuery: (query) => set({ searchQuery: query }),
@@ -78,15 +100,24 @@ export const useNotesStore = create<NotesState>((set, get) => {
       // Leaving a folder hides its notes everywhere, desktop post-its included.
       window.aeronotes.closeAllNoteWindows()
       window.aeronotes.setSettings({ lastOpenFolderId: null })
-      set({ currentFolderId: null, searchQuery: '' })
+      set({ currentFolderId: null, searchQuery: '', trashView: false })
     },
+    // New notes land at the top of the list AND open as a post-it, cursor
+    // ready — creating a note is always followed by writing in it.
     addNote: () => {
       const folderId = get().currentFolderId
-      if (folderId) void window.aeronotes.addNote(folderId)
+      if (!folderId) return
+      void window.aeronotes.addNote(folderId).then((note) => window.aeronotes.detachNote(note.id))
     },
     addFolder: () => void window.aeronotes.addFolder(t('folder.newName')),
     renameFolder: (id, name) => window.aeronotes.renameFolder(id, name),
     deleteNote: (id) => void window.aeronotes.deleteNote(id),
+    restoreNote: (id) => window.aeronotes.restoreNote(id),
+    purgeNote: (id) => void window.aeronotes.purgeNote(id),
+    emptyTrash: () => void window.aeronotes.emptyTrash(),
+    setNotePinned: (id, pinned) => window.aeronotes.setNotePinned(id, pinned),
+    setNoteDueAt: (id, dueAt) => window.aeronotes.setNoteDueAt(id, dueAt),
+    exportNoteMarkdown: (id) => void window.aeronotes.exportNoteMarkdown(id),
     deleteFolder: (id) => void window.aeronotes.deleteFolder(id),
     createTemplateFromNote: (note) =>
       void window.aeronotes.addTemplate(note.title || t('note.untitled'), note.content),

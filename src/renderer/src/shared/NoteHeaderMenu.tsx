@@ -2,11 +2,38 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Note, NoteColor } from '@shared/types'
 import { t } from '@shared/i18n'
 import { useNotesStore } from '@renderer/state/useNotesStore'
+import { MenuItem } from './MenuItem'
 
 export interface NoteHeaderMenuState {
   x: number
   y: number
   foldersOpen: boolean
+  /** The reminder sub-list is expanded. */
+  reminderOpen?: boolean
+}
+
+const HOUR_MS = 60 * 60 * 1000
+const SNOOZE_MS = 10 * 60 * 1000
+
+/** Today+`days` at 9:00 local time. */
+function morningIn(days: number): number {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  date.setHours(9, 0, 0, 0)
+  return date.getTime()
+}
+
+/** Next Monday 9:00 (a week away when today is Monday). */
+function nextMondayMorning(): number {
+  const daysUntilMonday = ((8 - new Date().getDay()) % 7) || 7
+  return morningIn(daysUntilMonday)
+}
+
+/** Epoch ms -> the `YYYY-MM-DDTHH:mm` a datetime-local input expects (local time). */
+function toDateTimeLocal(timestamp: number | undefined): string {
+  if (timestamp === undefined) return ''
+  const date = new Date(timestamp - new Date().getTimezoneOffset() * 60_000)
+  return date.toISOString().slice(0, 16)
 }
 
 interface NoteHeaderMenuProps {
@@ -16,27 +43,6 @@ interface NoteHeaderMenuProps {
   /** 'dock' = card in the dock; 'window' = detached post-it titlebar. */
   surface: 'dock' | 'window'
   onRename: () => void
-}
-
-function MenuItem({
-  onClick,
-  danger,
-  children
-}: {
-  onClick: () => void
-  danger?: boolean
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10 ${
-        danger ? 'text-red-400' : ''
-      }`}
-    >
-      {children}
-    </button>
-  )
 }
 
 /**
@@ -60,6 +66,9 @@ export function NoteHeaderMenu({
   const moveNoteToFolder = useNotesStore((s) => s.moveNoteToFolder)
   const setNoteColor = useNotesStore((s) => s.setNoteColor)
   const setNoteAlwaysOnTop = useNotesStore((s) => s.setNoteAlwaysOnTop)
+  const setNotePinned = useNotesStore((s) => s.setNotePinned)
+  const setNoteDueAt = useNotesStore((s) => s.setNoteDueAt)
+  const exportNoteMarkdown = useNotesStore((s) => s.exportNoteMarkdown)
   const folders = useNotesStore((s) => s.folders)
 
   const menuRef = useRef<HTMLDivElement>(null)
@@ -92,6 +101,11 @@ export function NoteHeaderMenu({
 
   const close = (): void => setMenu(null)
   const otherFolders = folders.filter((folder) => folder.id !== note.folderId)
+
+  const applyReminder = (dueAt: number | undefined): void => {
+    setNoteDueAt(note.id, dueAt)
+    close()
+  }
 
   return (
     <div
@@ -126,6 +140,50 @@ export function NoteHeaderMenu({
         >
           {t('note.pasteColor')}
         </MenuItem>
+      )}
+      <MenuItem
+        onClick={() => {
+          setNotePinned(note.id, !note.pinned)
+          close()
+        }}
+      >
+        {note.pinned ? t('note.unpinFromTop') : t('note.pinToTop')}
+      </MenuItem>
+      <MenuItem onClick={() => setMenu({ ...menu, reminderOpen: !menu.reminderOpen })}>
+        <span>⏰ {t('reminder.menu')}</span>
+        <span className="text-white/50">{menu.reminderOpen ? '▾' : '▸'}</span>
+      </MenuItem>
+      {menu.reminderOpen && (
+        <div className="ml-2 flex flex-col border-l border-white/10 pl-1">
+          <MenuItem onClick={() => applyReminder(Date.now() + HOUR_MS)}>
+            {t('reminder.in1h')}
+          </MenuItem>
+          <MenuItem onClick={() => applyReminder(morningIn(1))}>{t('reminder.tomorrow')}</MenuItem>
+          <MenuItem onClick={() => applyReminder(nextMondayMorning())}>
+            {t('reminder.nextWeek')}
+          </MenuItem>
+          {/* Free date/time. Changing it keeps the menu open, so the value can
+           * be adjusted field by field without it closing under the cursor. */}
+          <input
+            type="datetime-local"
+            value={toDateTimeLocal(note.dueAt)}
+            onChange={(event) => {
+              const value = event.target.value
+              setNoteDueAt(note.id, value ? new Date(value).getTime() : undefined)
+            }}
+            className="mx-2 my-1 rounded border border-white/15 bg-neutral-800 px-1.5 py-1 text-[11px] text-white outline-none focus:border-white/30"
+          />
+          {note.dueAt !== undefined && (
+            <>
+              <MenuItem onClick={() => applyReminder(Date.now() + SNOOZE_MS)}>
+                {t('reminder.snooze')}
+              </MenuItem>
+              <MenuItem danger onClick={() => applyReminder(undefined)}>
+                {t('reminder.clear')}
+              </MenuItem>
+            </>
+          )}
+        </div>
       )}
       {surface === 'dock' && (
         <>
@@ -166,6 +224,14 @@ export function NoteHeaderMenu({
         }}
       >
         {t('note.createTemplate')}
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          exportNoteMarkdown(note.id)
+          close()
+        }}
+      >
+        {t('note.exportMarkdown')}
       </MenuItem>
       {surface === 'window' && (
         <MenuItem

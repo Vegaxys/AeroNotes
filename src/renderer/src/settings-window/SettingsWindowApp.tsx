@@ -8,6 +8,7 @@ const dragRegion = { WebkitAppRegion: 'drag' } as unknown as CSSProperties
 const noDragRegion = { WebkitAppRegion: 'no-drag' } as unknown as CSSProperties
 
 const DEFAULT_TOGGLE_SHORTCUT = 'CommandOrControl+Shift+N'
+const DEFAULT_QUICK_CAPTURE_SHORTCUT = 'CommandOrControl+Shift+Space'
 const MODIFIER_KEYS = new Set(['Control', 'Shift', 'Alt', 'Meta'])
 const SPECIAL_KEYS: Record<string, string> = {
   ' ': 'Space',
@@ -124,8 +125,11 @@ function DisplaySelector({ settings }: { settings: AppSettings }): React.JSX.Ele
   )
 }
 
-function globalShortcuts(toggleShortcut: string): Array<[string, string]> {
-  return [[formatAccelerator(toggleShortcut), t('settings.shortcut.toggleDock')]]
+function globalShortcuts(toggleShortcut: string, quickCaptureShortcut: string): Array<[string, string]> {
+  return [
+    [formatAccelerator(toggleShortcut), t('settings.shortcut.toggleDock')],
+    [formatAccelerator(quickCaptureShortcut), t('settings.shortcut.quickCapture')]
+  ]
 }
 
 function TemplatesSection({ settings }: { settings: AppSettings }): React.JSX.Element {
@@ -377,11 +381,31 @@ export function SettingsWindowApp(): React.JSX.Element | null {
               className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
             />
           </label>
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
+            <span>{t('settings.dockAutoHide')}</span>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.dockAutoHide)}
+              onChange={() =>
+                window.aeronotes.setSettings({ dockAutoHide: !settings.dockAutoHide })
+              }
+              className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+            />
+          </label>
           <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
             <span>{t('settings.shortcut.toggleDock')}</span>
             <ShortcutRecorder
               value={settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT}
               onChange={(accelerator) => window.aeronotes.setSettings({ toggleShortcut: accelerator })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
+            <span>{t('settings.shortcut.quickCapture')}</span>
+            <ShortcutRecorder
+              value={settings.quickCaptureShortcut ?? DEFAULT_QUICK_CAPTURE_SHORTCUT}
+              onChange={(accelerator) =>
+                window.aeronotes.setSettings({ quickCaptureShortcut: accelerator })
+              }
             />
           </div>
           <DisplaySelector settings={settings} />
@@ -408,7 +432,12 @@ export function SettingsWindowApp(): React.JSX.Element | null {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/40">
             {t('settings.globalShortcuts')}
           </h2>
-          <ShortcutTable rows={globalShortcuts(settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)} />
+          <ShortcutTable
+            rows={globalShortcuts(
+              settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT,
+              settings.quickCaptureShortcut ?? DEFAULT_QUICK_CAPTURE_SHORTCUT
+            )}
+          />
         </section>
 
         <section className="space-y-2">

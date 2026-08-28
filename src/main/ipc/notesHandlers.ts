@@ -1,8 +1,10 @@
+import { writeFile } from 'fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { JSONContent } from '@tiptap/core'
 import type { NoteColor, Template } from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { t } from '@shared/i18n'
+import { noteToMarkdown } from '@shared/markdownSerialize'
 import { notesStore } from '../store/notesStore'
 import {
   closeAllNoteWindows,
@@ -93,7 +95,22 @@ export function registerNotesHandlers(): void {
     closeAllNoteWindows(broadcastNotes)
   })
 
-  ipcMain.handle(IPC_CHANNELS.NOTE_DELETE, async (event, id: string): Promise<boolean> => {
+  // No confirmation: the note lands in the trash and can be restored from the
+  // dock menu for 30 days. Only the irreversible actions below still confirm.
+  ipcMain.handle(IPC_CHANNELS.NOTE_DELETE, (_event, id: string): boolean => {
+    if (!notesStore.getById(id)) return false
+    destroyNoteWindow(id)
+    notesStore.deleteNote(id)
+    broadcastNotes()
+    return true
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_RESTORE, (_event, id: string) => {
+    notesStore.restoreNote(id)
+    broadcastNotes()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.NOTE_PURGE, async (event, id: string): Promise<boolean> => {
     const note = notesStore.getById(id)
     if (!note) return false
     const confirmed = await confirmDeletion(
@@ -102,10 +119,54 @@ export function registerNotesHandlers(): void {
       t('confirm.deleteNote.message', { title: note.title || t('note.untitled') })
     )
     if (!confirmed) return false
-    destroyNoteWindow(id)
-    notesStore.deleteNote(id)
+    notesStore.purgeNote(id)
     broadcastNotes()
     return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.TRASH_EMPTY, async (event): Promise<boolean> => {
+    const count = notesStore.getTrash().length
+    if (count === 0) return false
+    const confirmed = await confirmDeletion(
+      event.sender,
+      t('confirm.emptyTrash.title'),
+      t('confirm.emptyTrash.message', { count })
+    )
+    if (!confirmed) return false
+    notesStore.emptyTrash()
+    broadcastNotes()
+    return true
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.NOTE_EXPORT_MARKDOWN,
+    async (event, id: string): Promise<string | null> => {
+      const note = notesStore.getById(id)
+      if (!note) return null
+      const title = note.title || t('note.untitled')
+      const options: Electron.SaveDialogOptions = {
+        // Windows rejects these in file names; the title is user-typed.
+        defaultPath: `${title.replace(/[\/:*?"<>|]/g, '-')}.md`,
+        filters: [{ name: 'Markdown', extensions: ['md'] }]
+      }
+      const window = BrowserWindow.fromWebContents(event.sender)
+      const result = window
+        ? await dialog.showSaveDialog(window, options)
+        : await dialog.showSaveDialog(options)
+      if (result.canceled || !result.filePath) return null
+      await writeFile(result.filePath, noteToMarkdown(title, note.content), 'utf8')
+      return result.filePath
+    }
+  )
+
+  ipcMain.on(IPC_CHANNELS.NOTE_SET_DUE_AT, (_event, id: string, dueAt: number | undefined) => {
+    notesStore.setDueAt(id, dueAt)
+    broadcastNotes()
+  })
+
+  ipcMain.on(IPC_CHANNELS.NOTE_SET_PINNED, (_event, id: string, pinned: boolean) => {
+    notesStore.setPinned(id, pinned)
+    broadcastNotes()
   })
 
   ipcMain.handle(IPC_CHANNELS.NOTE_DUPLICATE, (_event, id: string) => {

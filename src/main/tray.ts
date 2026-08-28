@@ -1,37 +1,51 @@
 import { join } from 'path'
 import { app, BrowserWindow, Menu, Tray, globalShortcut, nativeImage } from 'electron'
 import { t } from '@shared/i18n'
+import { broadcastNotes } from './ipc/notesHandlers'
 import { settingsStore } from './store/settingsStore'
+import { openQuickCapture } from './windows/quickCaptureWindow'
 import { openSettingsWindow } from './windows/settingsWindow'
 
 export const DEFAULT_TOGGLE_SHORTCUT = 'CommandOrControl+Shift+N'
+export const DEFAULT_QUICK_CAPTURE_SHORTCUT = 'CommandOrControl+Shift+Space'
+
+/** The app's global shortcuts, each with its default accelerator. */
+export type ShortcutId = 'toggle' | 'quickCapture'
+
+const SHORTCUT_DEFAULTS: Record<ShortcutId, string> = {
+  toggle: DEFAULT_TOGGLE_SHORTCUT,
+  quickCapture: DEFAULT_QUICK_CAPTURE_SHORTCUT
+}
 
 let trayInstance: Tray | null = null
-let toggleOverlayAction: (() => void) | null = null
-let registeredShortcut: string | null = null
+const shortcutActions: Record<ShortcutId, (() => void) | null> = { toggle: null, quickCapture: null }
+const registeredShortcuts: Record<ShortcutId, string | null> = { toggle: null, quickCapture: null }
 
 /**
- * Swaps the global dock-toggle shortcut. Returns false (and keeps the previous
- * one registered) when the accelerator is invalid or taken by another app.
+ * Swaps one global shortcut. Returns false (and falls back to that shortcut's
+ * default) when the accelerator is invalid or already taken by another app —
+ * neither the dock nor the quick capture may become unreachable.
  */
-export function applyToggleShortcut(accelerator: string): boolean {
-  if (registeredShortcut) {
-    globalShortcut.unregister(registeredShortcut)
-    registeredShortcut = null
+export function applyShortcut(id: ShortcutId, accelerator: string): boolean {
+  const previous = registeredShortcuts[id]
+  if (previous) {
+    globalShortcut.unregister(previous)
+    registeredShortcuts[id] = null
   }
+  const run = (): void => shortcutActions[id]?.()
   let success = false
   try {
-    success = globalShortcut.register(accelerator, () => toggleOverlayAction?.())
+    success = globalShortcut.register(accelerator, run)
   } catch {
     success = false
   }
   if (success) {
-    registeredShortcut = accelerator
+    registeredShortcuts[id] = accelerator
     return true
   }
-  // Fall back to the default so the dock never becomes unreachable.
-  if (accelerator !== DEFAULT_TOGGLE_SHORTCUT && globalShortcut.register(DEFAULT_TOGGLE_SHORTCUT, () => toggleOverlayAction?.())) {
-    registeredShortcut = DEFAULT_TOGGLE_SHORTCUT
+  const fallback = SHORTCUT_DEFAULTS[id]
+  if (accelerator !== fallback && globalShortcut.register(fallback, run)) {
+    registeredShortcuts[id] = fallback
   }
   return false
 }
@@ -44,7 +58,8 @@ function getTrayIconPath(): string {
 
 function buildContextMenu(): Menu {
   return Menu.buildFromTemplate([
-    { label: t('tray.toggleDock'), click: () => toggleOverlayAction?.() },
+    { label: t('tray.toggleDock'), click: () => shortcutActions.toggle?.() },
+    { label: t('tray.quickCapture'), click: () => shortcutActions.quickCapture?.() },
     { label: t('tray.settings'), click: () => openSettingsWindow() },
     { type: 'separator' },
     { label: t('tray.quit'), click: () => app.quit() }
@@ -72,12 +87,15 @@ export function createTray(getOverlayWindow: () => BrowserWindow | null): Tray {
   }
 
   trayInstance = tray
-  toggleOverlayAction = toggleOverlay
+  shortcutActions.toggle = toggleOverlay
+  shortcutActions.quickCapture = () => openQuickCapture(broadcastNotes)
   tray.setContextMenu(buildContextMenu())
 
   tray.on('click', toggleOverlay)
 
-  applyToggleShortcut(settingsStore.get().toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)
+  const settings = settingsStore.get()
+  applyShortcut('toggle', settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)
+  applyShortcut('quickCapture', settings.quickCaptureShortcut ?? DEFAULT_QUICK_CAPTURE_SHORTCUT)
 
   return tray
 }

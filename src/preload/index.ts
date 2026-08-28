@@ -16,6 +16,8 @@ const api = {
   setOverlayIgnoreMouse: (ignore: boolean): void => {
     ipcRenderer.send(IPC_CHANNELS.OVERLAY_SET_IGNORE_MOUSE, ignore)
   },
+  setOverlayFocusable: (focusable: boolean): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.OVERLAY_SET_FOCUSABLE, focusable),
   getAllNotes: (): Promise<Note[]> => ipcRenderer.invoke(IPC_CHANNELS.NOTES_GET_ALL),
   onNotesChanged: (callback: (notes: Note[]) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, notes: Note[]): void => callback(notes)
@@ -35,6 +37,19 @@ const api = {
     ipcRenderer.send(IPC_CHANNELS.FOLDER_RENAME, id, name)
   },
   deleteNote: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.NOTE_DELETE, id),
+  restoreNote: (id: string): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTE_RESTORE, id)
+  },
+  purgeNote: (id: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.NOTE_PURGE, id),
+  emptyTrash: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.TRASH_EMPTY),
+  exportNoteMarkdown: (id: string): Promise<string | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTE_EXPORT_MARKDOWN, id),
+  setNoteDueAt: (id: string, dueAt: number | undefined): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTE_SET_DUE_AT, id, dueAt)
+  },
+  setNotePinned: (id: string, pinned: boolean): void => {
+    ipcRenderer.send(IPC_CHANNELS.NOTE_SET_PINNED, id, pinned)
+  },
   getAllTemplates: (): Promise<Template[]> => ipcRenderer.invoke(IPC_CHANNELS.TEMPLATES_GET_ALL),
   onTemplatesChanged: (callback: (templates: Template[]) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, templates: Template[]): void =>
@@ -134,6 +149,7 @@ const api = {
     ipcRenderer.on(IPC_CHANNELS.SETTINGS_CHANGED, listener)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.SETTINGS_CHANGED, listener)
   },
+  readClipboardText: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_READ_TEXT),
   openLocalPath: (path: string, kind: 'file' | 'folder'): Promise<string> =>
     ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_PATH, path, kind),
   openExternalUrl: (url: string): Promise<void> =>

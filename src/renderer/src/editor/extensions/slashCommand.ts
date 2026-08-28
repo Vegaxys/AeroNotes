@@ -1,9 +1,8 @@
 import { Extension } from '@tiptap/core'
-import { ReactRenderer } from '@tiptap/react'
+import { PluginKey } from '@tiptap/pm/state'
 import Suggestion from '@tiptap/suggestion'
-import tippy, { type Instance as TippyInstance } from 'tippy.js'
-import { SlashCommandList, type SlashCommandListHandle } from './SlashCommandList'
 import { getSlashCommandItems, type SlashCommandItem } from './slashCommandItems'
+import { createSuggestionRenderer } from './suggestionPopup'
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
@@ -12,6 +11,9 @@ export const SlashCommand = Extension.create({
     return [
       Suggestion<SlashCommandItem>({
         editor: this.editor,
+        // Explicit key: the note-link picker is a second Suggestion plugin in
+        // the same editor, and they may not share the default key.
+        pluginKey: new PluginKey('slashCommandSuggestion'),
         char: '/',
         startOfLine: false,
         items: ({ query }) =>
@@ -21,57 +23,7 @@ export const SlashCommand = Extension.create({
         command: ({ editor, range, props }) => {
           props.command({ editor, range })
         },
-        render: () => {
-          let component: ReactRenderer<SlashCommandListHandle>
-          let popup: TippyInstance[]
-
-          return {
-            onStart: (props) => {
-              component = new ReactRenderer(SlashCommandList, {
-                props,
-                editor: props.editor
-              })
-              if (!props.clientRect) return
-
-              popup = tippy('body', {
-                getReferenceClientRect: props.clientRect as () => DOMRect,
-                appendTo: () => document.body,
-                content: component.element,
-                showOnCreate: true,
-                interactive: true,
-                trigger: 'manual',
-                placement: 'bottom-start',
-                // Note windows are small, so the menu must reposition itself to
-                // stay fully visible rather than get clipped near an edge.
-                popperOptions: {
-                  modifiers: [
-                    {
-                      name: 'flip',
-                      options: { fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }
-                    },
-                    { name: 'preventOverflow', options: { boundary: 'clippingParents', padding: 8 } }
-                  ]
-                }
-              })
-            },
-            onUpdate(props) {
-              component.updateProps(props)
-              if (!props.clientRect) return
-              popup[0]?.setProps({ getReferenceClientRect: props.clientRect as () => DOMRect })
-            },
-            onKeyDown(props) {
-              if (props.event.key === 'Escape') {
-                popup[0]?.hide()
-                return true
-              }
-              return component.ref?.onKeyDown(props) ?? false
-            },
-            onExit() {
-              popup[0]?.destroy()
-              component.destroy()
-            }
-          }
-        }
+        render: createSuggestionRenderer()
       })
     ]
   }

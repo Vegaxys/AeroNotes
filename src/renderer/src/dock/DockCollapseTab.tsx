@@ -7,8 +7,6 @@ export function DockCollapseTab(): React.JSX.Element {
   const toggleDockCollapsed = useSettingsStore((s) => s.toggleDockCollapsed)
 
   const innerEdge = dockSide === 'right' ? 'left' : 'right'
-  const arrowTowardCenter = dockSide === 'right' ? '‹' : '›'
-  const arrowTowardEdge = dockSide === 'right' ? '›' : '‹'
 
   return (
     <button
@@ -16,19 +14,23 @@ export function DockCollapseTab(): React.JSX.Element {
       // Always a live region: when the dock is collapsed this button is the
       // only part of the overlay that should capture the mouse.
       data-mouse-live=""
-      className="absolute top-1/2 flex h-45 w-4 -translate-y-1/2 items-center justify-center rounded-[var(--radius-sm)] text-white/70 hover:text-white"
+      // The button stays 16px wide as a comfortable hit target; only the thin
+      // pill inside it is visible (see below).
+      className="group absolute top-1/2 flex h-45 w-4 -translate-y-1/2 items-center justify-center"
       style={{
-        // Collapsed: hug the screen edge to stay out of the way (2px gap).
-        // Expanded: straddle the dock's inner edge, half outside.
-        [innerEdge]: dockCollapsed ? 10 : -8,
-        background: 'var(--color-glass-strong)',
-        border: '1px solid var(--color-glass-border)',
+        // Offsets are for the 16px hit box, so the visible pill sits 5px
+        // further in. Collapsed: hug the screen edge to stay out of the way
+        // (pill ~4px from it). Expanded: just inside the dock's inner edge, so
+        // nothing can clip it and it stays clear of the list's scrollbar.
+        [innerEdge]: dockCollapsed ? 13 : -2,
         transition: `${innerEdge} 0.2s ease-out`
       }}
       aria-label={dockCollapsed ? t('dock.expand') : t('dock.collapse')}
       title={dockCollapsed ? t('dock.expand') : t('dock.collapse')}
     >
-      {dockCollapsed ? arrowTowardCenter : arrowTowardEdge}
+      {/* Plain solid pill — no icon, no border — sized like a browser
+       * scrollbar thumb so it reads as a grab handle rather than a button. */}
+      <span className="h-full w-1.5 rounded-full bg-white/40 transition-colors duration-150 group-hover:bg-white/65" />
     </button>
   )
 }

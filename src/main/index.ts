@@ -2,9 +2,10 @@
 import './bootstrapLocale'
 import { app, BrowserWindow, globalShortcut } from 'electron'
 import { startFullscreenWatcher } from './fullscreenWatcher'
+import { startReminderScheduler } from './reminderScheduler'
 import { registerBlockHandlers } from './ipc/blockHandlers'
 import { registerImageHandlers } from './ipc/imageHandlers'
-import { registerNotesHandlers } from './ipc/notesHandlers'
+import { broadcastNotes, registerNotesHandlers } from './ipc/notesHandlers'
 import { registerOverlayHandlers } from './ipc/overlayHandlers'
 import { registerSettingsHandlers } from './ipc/settingsHandlers'
 import { registerShellHandlers } from './ipc/shellHandlers'
@@ -20,7 +21,22 @@ import { createOverlayWindow } from './windows/overlayWindow'
 let overlayWindow: BrowserWindow | null = null
 let tray: ReturnType<typeof createTray> | null = null
 
+/** How often trashed notes past their 30-day TTL are swept away. */
+const TRASH_SWEEP_INTERVAL_MS = 6 * 60 * 60 * 1000
+
+/** Sweeps now and then periodically — long sessions must not accumulate trash. */
+function startTrashSweeper(): void {
+  const sweep = (): void => {
+    if (notesStore.purgeExpiredTrash().length > 0) broadcastNotes()
+  }
+  sweep()
+  setInterval(sweep, TRASH_SWEEP_INTERVAL_MS)
+}
+
 app.whenReady().then(() => {
+  // Windows attributes toast notifications to this id; without it reminders
+  // either don't show or show as "electron.app.Electron".
+  app.setAppUserModelId('com.aeronotes.app')
   registerImageProtocol()
   registerOverlayHandlers(() => overlayWindow)
   registerNotesHandlers()
@@ -35,6 +51,8 @@ app.whenReady().then(() => {
   overlayWindow = createOverlayWindow()
   tray = createTray(() => overlayWindow)
   startFullscreenWatcher(() => overlayWindow)
+  startTrashSweeper()
+  startReminderScheduler(broadcastNotes)
   initSync()
 
   app.on('activate', () => {

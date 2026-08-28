@@ -61,6 +61,17 @@ input[type='color'].color-swatch-input::-webkit-color-swatch {
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 }
 
+/* The collapse tab straddles the dock's inner edge — exactly where the vertical
+ * lists' scrollbar would sit. A classic scrollbar is laid out inside the border
+ * box, so a transparent right border pushes it inward, clear of the tab; the
+ * list's own right padding is dropped in exchange so the cards keep the width
+ * (and the same gap to the edge) they had before. Not on .dock-scroll itself:
+ * the horizontal template carousel shares that class. */
+.dock-scroll-list {
+  padding-right: 0;
+  border-right: 12px solid transparent;
+}
+
 .dock-scroll::-webkit-scrollbar {
   width: 8px;
 }

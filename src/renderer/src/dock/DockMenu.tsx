@@ -1,23 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { t } from '@shared/i18n'
+import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
-
-function MenuItem({
-  onClick,
-  children
-}: {
-  onClick: () => void
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10"
-    >
-      {children}
-    </button>
-  )
-}
+import { MenuItem, MenuPanel } from '@renderer/shared/MenuItem'
 
 /**
  * Dock menu button (replaces the bare side-switch button): swap side, the
@@ -27,6 +12,8 @@ export function DockMenu(): React.JSX.Element {
   const toggleDockSide = useSettingsStore((s) => s.toggleDockSide)
   const notesExpanded = useSettingsStore((s) => s.notesExpanded)
   const toggleNotesExpanded = useSettingsStore((s) => s.toggleNotesExpanded)
+  const trashCount = useNotesStore((s) => s.trash.length)
+  const setTrashView = useNotesStore((s) => s.setTrashView)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -54,10 +41,7 @@ export function DockMenu(): React.JSX.Element {
         ⋯
       </button>
       {open && (
-        <div
-          data-mouse-live=""
-          className="absolute right-0 top-full z-30 mt-2 w-52 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 text-xs text-white/85 shadow-2xl"
-        >
+        <MenuPanel className="absolute right-0 top-full z-30 mt-2 w-52">
           <MenuItem
             onClick={() => {
               toggleDockSide()
@@ -69,6 +53,15 @@ export function DockMenu(): React.JSX.Element {
           <MenuItem onClick={toggleNotesExpanded}>
             <span>{t('menu.expandNotes')}</span>
             <span className="text-white/60">{notesExpanded ? '✓' : ''}</span>
+          </MenuItem>
+          <div className="my-1 h-px bg-white/10" />
+          <MenuItem
+            onClick={() => {
+              setTrashView(true)
+              setOpen(false)
+            }}
+          >
+            <span>🗑 {t('trash.open', { count: trashCount })}</span>
           </MenuItem>
           <div className="my-1 h-px bg-white/10" />
           <MenuItem
@@ -90,7 +83,7 @@ export function DockMenu(): React.JSX.Element {
           <MenuItem onClick={() => window.aeronotes.quitApp()}>
             <span>{t('tray.quit')}</span>
           </MenuItem>
-        </div>
+        </MenuPanel>
       )}
     </div>
   )

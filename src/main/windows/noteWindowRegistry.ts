@@ -1,7 +1,7 @@
 import { BrowserWindow, screen } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { notesStore } from '../store/notesStore'
-import { createNoteWindow, type ScreenPosition } from './noteWindow'
+import { createNoteWindow, type NoteWindowOptions, type ScreenPosition } from './noteWindow'
 
 const noteWindows = new Map<string, BrowserWindow>()
 
@@ -101,7 +101,12 @@ export function toggleNoteCollapse(id: string): void {
   }
 }
 
-export function detachNote(id: string, onChanged: () => void, dropPosition?: ScreenPosition): void {
+export function detachNote(
+  id: string,
+  onChanged: () => void,
+  dropPosition?: ScreenPosition,
+  options?: NoteWindowOptions
+): void {
   if (noteWindows.has(id)) {
     focusNote(id)
     return
@@ -111,7 +116,7 @@ export function detachNote(id: string, onChanged: () => void, dropPosition?: Scr
   if (!note) return
 
   notesStore.setDetached(id, true)
-  const window = createNoteWindow(notesStore.getById(id)!, dropPosition)
+  const window = createNoteWindow(notesStore.getById(id)!, dropPosition, options)
   noteWindows.set(id, window)
   wireTitlebarInteractions(window, id)
 

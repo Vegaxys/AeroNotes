@@ -10,6 +10,7 @@ import type {
 } from '@shared/types'
 import { GRADIENT_PRESETS, SOLID_PRESETS } from '@shared/colorPalette'
 import { extractPlainText } from '@shared/plainTextExtract'
+import { TRASH_TTL_MS } from '@shared/trash'
 import { t } from '@shared/i18n'
 import {
   loadFolders,
@@ -144,9 +145,87 @@ class NotesStore {
     this.scheduleSave()
   }
 
+  /**
+   * Moves a note to the trash. Soft delete on purpose: `deletedAt` is a synced
+   * field, so the deletion reaches the other machines as a plain update and
+   * stays undoable for 30 days on all of them. The real delete (which drops
+   * the note and leaves a tombstone) happens in `purgeNote`.
+   */
   deleteNote(id: string): void {
+    const note = this.notes.get(id)
+    if (!note || note.deletedAt) return
+    const timestamp = Date.now()
+    this.notes.set(id, { ...note, deletedAt: timestamp, isDetached: false, updatedAt: timestamp })
+    this.scheduleSave()
+  }
+
+  /**
+   * Back out of the trash, at the top of its folder. A note whose folder was
+   * deleted meanwhile would be invisible, so it lands in the first folder —
+   * same rule as the orphan-note migration in the constructor.
+   */
+  restoreNote(id: string): void {
+    const note = this.notes.get(id)
+    if (!note?.deletedAt) return
+    const folderId = this.folders.has(note.folderId)
+      ? note.folderId
+      : ([...this.folders.values()][0] ?? this.createFolder(t('folder.defaultName'))).id
+    this.shiftDockIndexes(folderId)
+    const { deletedAt: _trashed, ...restored } = note
+    this.notes.set(id, { ...restored, folderId, dockIndex: 0, updatedAt: Date.now() })
+    this.scheduleSave()
+  }
+
+  /** Real, irreversible delete (+ tombstone so it can't come back from the cloud). */
+  purgeNote(id: string): void {
     if (!this.notes.delete(id)) return
     this.tombstones.notes[id] = Date.now()
+    this.scheduleSave()
+  }
+
+  getTrash(): Note[] {
+    return [...this.notes.values()]
+      .filter((note) => note.deletedAt)
+      .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0))
+  }
+
+  /** Empties the trash; returns the purged ids. */
+  emptyTrash(): string[] {
+    const ids = this.getTrash().map((note) => note.id)
+    ids.forEach((id) => this.purgeNote(id))
+    return ids
+  }
+
+  /** Purges notes trashed more than TRASH_TTL_MS ago; returns the purged ids. */
+  purgeExpiredTrash(): string[] {
+    const cutoff = Date.now() - TRASH_TTL_MS
+    const ids = this.getTrash()
+      .filter((note) => (note.deletedAt ?? 0) < cutoff)
+      .map((note) => note.id)
+    ids.forEach((id) => this.purgeNote(id))
+    return ids
+  }
+
+  /** Sets (or clears, with undefined) a note's reminder; re-arms the notification. */
+  setDueAt(id: string, dueAt: number | undefined): void {
+    const note = this.notes.get(id)
+    if (!note) return
+    this.notes.set(id, { ...note, dueAt, remindedAt: undefined, updatedAt: Date.now() })
+    this.scheduleSave()
+  }
+
+  /** Records that the reminder fired, so the scheduler never repeats it. */
+  markReminded(id: string, at: number): void {
+    const note = this.notes.get(id)
+    if (!note) return
+    this.notes.set(id, { ...note, remindedAt: at, updatedAt: at })
+    this.scheduleSave()
+  }
+
+  setPinned(id: string, pinned: boolean): void {
+    const note = this.notes.get(id)
+    if (!note) return
+    this.notes.set(id, { ...note, pinned, updatedAt: Date.now() })
     this.scheduleSave()
   }
 
@@ -218,27 +297,39 @@ class NotesStore {
     this.scheduleSave()
   }
 
-  /** Deletes a folder and all its notes; returns the ids of the deleted notes. */
+  /**
+   * Deletes a folder; its notes go to the trash (restoring one later moves it
+   * to another folder). Returns the ids of the trashed notes.
+   */
   deleteFolder(id: string): string[] {
     if (!this.folders.delete(id)) return []
-    const timestamp = Date.now()
-    this.tombstones.folders[id] = timestamp
-    const noteIds = [...this.notes.values()].filter((n) => n.folderId === id).map((n) => n.id)
-    noteIds.forEach((noteId) => {
-      this.notes.delete(noteId)
-      this.tombstones.notes[noteId] = timestamp
-    })
+    this.tombstones.folders[id] = Date.now()
+    const noteIds = this.getActiveNotesInFolder(id).map((n) => n.id)
+    noteIds.forEach((noteId) => this.deleteNote(noteId))
     this.scheduleSave()
     return noteIds
   }
 
-  countNotesInFolder(id: string): number {
-    return [...this.notes.values()].filter((n) => n.folderId === id).length
+  /** Notes of a folder that are not in the trash. */
+  private getActiveNotesInFolder(id: string): Note[] {
+    return [...this.notes.values()].filter((n) => n.folderId === id && !n.deletedAt)
   }
 
+  /** Frees index 0 of a folder so a new (or restored) note can take the top spot. */
+  private shiftDockIndexes(folderId: string): void {
+    this.getActiveNotesInFolder(folderId).forEach((note) => {
+      this.notes.set(note.id, { ...note, dockIndex: note.dockIndex + 1 })
+    })
+  }
+
+  countNotesInFolder(id: string): number {
+    return this.getActiveNotesInFolder(id).length
+  }
+
+  /** New notes go to the TOP of their folder (index 0), not the bottom. */
   add(folderId: string): Note {
     const timestamp = Date.now()
-    const siblings = [...this.notes.values()].filter((n) => n.folderId === folderId)
+    this.shiftDockIndexes(folderId)
     const note: Note = {
       id: crypto.randomUUID(),
       title: t('note.defaultTitle'),
@@ -246,7 +337,7 @@ class NotesStore {
       contentPreview: '',
       color: SOLID_PRESETS[this.notes.size % SOLID_PRESETS.length],
       folderId,
-      dockIndex: siblings.length,
+      dockIndex: 0,
       isDetached: false,
       createdAt: timestamp,
       updatedAt: timestamp

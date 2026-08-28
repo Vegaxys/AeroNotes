@@ -15,7 +15,9 @@ export function DockSearchInput({ placeholder }: DockSearchInputProps): React.JS
       onChange={(e) => setSearchQuery(e.target.value)}
       placeholder={placeholder}
       spellCheck={false}
-      className="h-full min-w-0 flex-1 bg-transparent px-1.5 text-sm text-white placeholder-white/40 outline-none"
+      // The window must be activated before the caret shows, so the focus ring
+      // is the immediate feedback that the click landed.
+      className="h-full min-w-0 flex-1 rounded bg-transparent px-1.5 text-sm text-white caret-white placeholder-white/40 outline-none focus:bg-white/5"
     />
   )
 }

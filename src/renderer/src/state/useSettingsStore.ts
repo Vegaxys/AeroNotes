@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AppSettings, DockSide } from '@shared/types'
+import type { AppSettings, DockSide, NoteSortMode } from '@shared/types'
 import { resolveLocale, setLocale, type LocalePreference } from '@shared/i18n'
 
 interface SettingsState {
@@ -9,6 +9,9 @@ interface SettingsState {
   notesExpanded: boolean
   locale: LocalePreference
   disabledBuiltinTemplates: string[]
+  sortMode: NoteSortMode
+  setSortMode: (sortMode: NoteSortMode) => void
+  dockAutoHide: boolean
   toggleDockSide: () => void
   toggleDockCollapsed: () => void
   toggleNotesExpanded: () => void
@@ -19,7 +22,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
   // already read the new dictionary.
   const applySettings = (settings: AppSettings): void => {
     setLocale(resolveLocale(settings.locale ?? 'system', [navigator.language]))
-    set(settings)
+    // Optional settings arrive as undefined on a store written before they
+    // existed — spreading that over the defaults would erase them.
+    set({
+      ...settings,
+      sortMode: settings.sortMode ?? 'manual',
+      dockAutoHide: Boolean(settings.dockAutoHide)
+    })
   }
   window.aeronotes.getSettings().then(applySettings)
   window.aeronotes.onSettingsChanged(applySettings)
@@ -31,6 +40,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     notesExpanded: true,
     locale: 'system',
     disabledBuiltinTemplates: [],
+    sortMode: 'manual',
+    setSortMode: (sortMode) => window.aeronotes.setSettings({ sortMode }),
+    dockAutoHide: false,
     toggleDockSide: () => {
       const dockSide: DockSide = get().dockSide === 'right' ? 'left' : 'right'
       window.aeronotes.setSettings({ dockSide })

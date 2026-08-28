@@ -1,7 +1,11 @@
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 
 export function registerShellHandlers(): void {
+  // Electron's clipboard, not navigator.clipboard: the latter needs a
+  // permission prompt and a focused document.
+  ipcMain.handle(IPC_CHANNELS.CLIPBOARD_READ_TEXT, () => clipboard.readText())
+
   ipcMain.handle(
     IPC_CHANNELS.SHELL_OPEN_PATH,
     async (_event, path: string, kind: 'file' | 'folder') => {

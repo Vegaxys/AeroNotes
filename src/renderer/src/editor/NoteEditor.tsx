@@ -23,6 +23,10 @@ interface NoteEditorProps {
   compact?: boolean
   /** Show the template pills while the note is empty. */
   showTemplates?: boolean
+  /** Put the caret in the note as soon as it mounts (freshly created note). */
+  autofocus?: boolean
+  /** Quick-capture window: the template pills gain a "Clipboard" entry. */
+  quickCapture?: boolean
 }
 
 /** Rough width of the highlight popup, to clamp it inside the container. */
@@ -33,7 +37,9 @@ export function NoteEditor({
   content,
   onChange,
   compact,
-  showTemplates
+  showTemplates,
+  autofocus,
+  quickCapture
 }: NoteEditorProps): React.JSX.Element | null {
   const containerRef = useRef<HTMLDivElement>(null)
   const [highlightMenu, setHighlightMenu] = useState<{ top: number; left: number } | null>(null)
@@ -41,7 +47,9 @@ export function NoteEditor({
 
   const editor = useEditor({
     immediatelyRender: true,
+    autofocus: autofocus ? 'end' : false,
     extensions: createNoteEditorExtensions({
+      noteId,
       onHighlightClick: (event) => {
         const container = containerRef.current
         if (!container) return
@@ -107,6 +115,7 @@ export function NoteEditor({
       <EditorContent editor={editor} />
       {showTemplates && isEmpty && (
         <TemplateCarousel
+          showClipboardPill={quickCapture}
           onApply={(templateContent) => {
             editor.commands.setContent(templateContent)
             setIsEmpty(editor.isEmpty)

@@ -412,3 +412,20 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* [[Note link]]: an inline chip pointing at another note. Reads as a link but
+ * keeps the wiki brackets, so the syntax stays visible while editing. */
+.note-editor .note-link {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 2px;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.75);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.note-editor .note-link:hover {
+  background: rgba(0, 0, 0, 0.12);
+}

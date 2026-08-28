@@ -35,9 +35,27 @@ export interface Note {
   isDetached: boolean
   windowBounds?: WindowBounds
   alwaysOnTop?: boolean
+  /**
+   * In the trash since this timestamp — hidden from every list, restorable,
+   * and purged for good (real delete + tombstone) after 30 days. Synced like
+   * any other field, so a deletion propagates before the purge does.
+   */
+  deletedAt?: number
+  /** Floats to the top of the dock list whatever the sort mode. */
+  pinned?: boolean
+  /** Reminder time (epoch ms): a Windows notification fires once at or after it. */
+  dueAt?: number
+  /**
+   * When the reminder for the current `dueAt` was notified. Synced like the
+   * rest, so a note reminds once across machines rather than once per machine.
+   */
+  remindedAt?: number
   createdAt: number
   updatedAt: number
 }
+
+/** Dock list ordering. 'manual' = the user's own drag order (`dockIndex`). */
+export type NoteSortMode = 'manual' | 'created' | 'updated' | 'name'
 
 /** A user-created note template (built-ins live in code, never persisted). */
 export interface Template {
@@ -117,6 +135,12 @@ export interface AppSettings {
   locale?: LocalePreference
   /** Electron accelerator toggling the dock (default CommandOrControl+Shift+N). */
   toggleShortcut?: string
+  /** Electron accelerator opening the quick capture (default CommandOrControl+Shift+Space). */
+  quickCaptureShortcut?: string
   /** Built-in template ids hidden from the carousel (local preference). */
   disabledBuiltinTemplates?: string[]
+  /** Dock list ordering; reset to 'manual' as soon as a note is dragged. */
+  sortMode?: NoteSortMode
+  /** Taskbar-style auto-hide: the dock retracts until the cursor reaches its edge. */
+  dockAutoHide?: boolean
 }

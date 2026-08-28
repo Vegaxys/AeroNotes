@@ -4,7 +4,12 @@ import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { resolveLocale, setLocale } from '@shared/i18n'
 import { applyLaunchAtStartup } from '../startup'
 import { settingsStore } from '../store/settingsStore'
-import { applyToggleShortcut, DEFAULT_TOGGLE_SHORTCUT, refreshTrayMenu } from '../tray'
+import {
+  applyShortcut,
+  DEFAULT_QUICK_CAPTURE_SHORTCUT,
+  DEFAULT_TOGGLE_SHORTCUT,
+  refreshTrayMenu
+} from '../tray'
 import { repositionOverlayToDisplay } from '../windows/overlayWindow'
 
 /** The connected monitors, primary first, for the settings display picker. */
@@ -32,7 +37,7 @@ export function registerSettingsHandlers(getOverlayWindow: () => BrowserWindow |
   ipcMain.handle(IPC_CHANNELS.APP_GET_VERSION, () => app.getVersion())
 
   ipcMain.on(IPC_CHANNELS.SETTINGS_SET, (_event, patch: Partial<AppSettings>) => {
-    const previousShortcut = settingsStore.get().toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT
+    const previous = settingsStore.get()
     // A chosen display id is only meaningful this session (Windows regenerates
     // it on reboot); capture a stable label + geometry descriptor alongside it
     // so the overlay can re-find the monitor after a restart.
@@ -61,10 +66,19 @@ export function registerSettingsHandlers(getOverlayWindow: () => BrowserWindow |
     // (invalid or taken by another app) revert the persisted value so the
     // broadcast shows the shortcut actually in effect.
     if (patch.toggleShortcut !== undefined) {
-      const applied = applyToggleShortcut(settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)
-      if (!applied) {
+      const previousShortcut = previous.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT
+      if (!applyShortcut('toggle', settings.toggleShortcut ?? DEFAULT_TOGGLE_SHORTCUT)) {
         settingsStore.update({ toggleShortcut: previousShortcut })
-        applyToggleShortcut(previousShortcut)
+        applyShortcut('toggle', previousShortcut)
+      }
+    }
+    if (patch.quickCaptureShortcut !== undefined) {
+      const previousShortcut = previous.quickCaptureShortcut ?? DEFAULT_QUICK_CAPTURE_SHORTCUT
+      if (
+        !applyShortcut('quickCapture', settings.quickCaptureShortcut ?? DEFAULT_QUICK_CAPTURE_SHORTCUT)
+      ) {
+        settingsStore.update({ quickCaptureShortcut: previousShortcut })
+        applyShortcut('quickCapture', previousShortcut)
       }
     }
     // Display change: move the dock overlay onto the newly chosen monitor.

@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { Dock } from '@renderer/dock/Dock'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { useClickThroughHitTest } from './hooks/useClickThroughHitTest'
+import { useKeyboardFocusEscalation } from './hooks/useKeyboardFocusEscalation'
 
 export function OverlayApp(): React.JSX.Element {
   useClickThroughHitTest()
+  useKeyboardFocusEscalation()
 
   // Click-dragging the dock's empty chrome would start a native drag of
   // whatever got selected, showing a ghost of the app under the cursor. Only

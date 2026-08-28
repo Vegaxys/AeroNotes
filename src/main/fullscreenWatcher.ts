@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'child_process'
 import { app, type BrowserWindow } from 'electron'
+import { assertOverlayOnTop } from './windows/overlayWindow'
 
 /**
  * Drops the overlay behind fullscreen apps (games). Electron has no API for
@@ -105,6 +106,8 @@ export function startFullscreenWatcher(getOverlayWindow: () => BrowserWindow | n
             hiddenByWatcher = false
             // showInactive: never steal focus from whatever the user is in.
             overlay.showInactive()
+            // The game may have demoted us out of the topmost band while it ran.
+            assertOverlayOnTop(overlay)
           }
         }
       }

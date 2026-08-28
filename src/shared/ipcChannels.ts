@@ -1,5 +1,14 @@
 export const IPC_CHANNELS = {
   OVERLAY_SET_IGNORE_MOUSE: 'overlay:set-ignore-mouse',
+  /**
+   * Renderer -> main (invoke): escalate the overlay to a focusable
+   * (activatable) window while an editable element holds focus, then drop
+   * back. Kept false by default so clicking the dock never yanks foreground
+   * away from a fullscreen/borderless video behind it. It resolves only once
+   * the window is actually active, which is when the renderer may place the
+   * caret (see useKeyboardFocusEscalation).
+   */
+  OVERLAY_SET_FOCUSABLE: 'overlay:set-focusable',
   NOTES_GET_ALL: 'notes:get-all',
   NOTES_CHANGED: 'notes:changed',
   NOTE_ADD: 'note:add',
@@ -14,7 +23,20 @@ export const IPC_CHANNELS = {
   NOTE_SET_COLOR: 'note:set-color',
   NOTE_SET_TITLE: 'note:set-title',
   NOTES_REORDER: 'notes:reorder',
+  /** Move to the trash (soft delete, restorable for 30 days). */
   NOTE_DELETE: 'note:delete',
+  /** Pull a note back out of the trash. */
+  NOTE_RESTORE: 'note:restore',
+  /** Delete a trashed note for good (confirmed, irreversible). */
+  NOTE_PURGE: 'note:purge',
+  /** Purge every trashed note at once (confirmed, irreversible). */
+  TRASH_EMPTY: 'trash:empty',
+  /** Save a note as a .md file (native save dialog); resolves to the path or null. */
+  NOTE_EXPORT_MARKDOWN: 'note:export-markdown',
+  /** Set or clear a note's reminder (epoch ms, or undefined to clear). */
+  NOTE_SET_DUE_AT: 'note:set-due-at',
+  /** Star/unstar: pinned notes sort above every other note in the dock. */
+  NOTE_SET_PINNED: 'note:set-pinned',
   NOTE_DUPLICATE: 'note:duplicate',
   /** Cross-window color clipboard (copy a note's background, paste it on another). */
   COLOR_COPY: 'color:copy',
@@ -47,6 +69,8 @@ export const IPC_CHANNELS = {
   SETTINGS_SET: 'settings:set',
   SETTINGS_CHANGED: 'settings:changed',
   DISPLAYS_GET: 'displays:get',
+  /** Renderer -> main: the system clipboard's plain text (quick-capture pill). */
+  CLIPBOARD_READ_TEXT: 'clipboard:read-text',
   SHELL_OPEN_PATH: 'shell:open-path',
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
   DIALOG_PICK_PATH: 'dialog:pick-path',

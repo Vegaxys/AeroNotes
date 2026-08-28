@@ -23,6 +23,23 @@ const en = {
   'dock.searchFolders': 'Search folders...',
   'dock.searchIn': 'Search in {name}...',
   'dock.searchInFallback': 'Search notes...',
+  'dock.searchTrash': 'Search the trash...',
+  'dock.sort': 'Sort notes',
+  'dock.sort.manual': 'Manual order',
+  'dock.sort.created': 'Date created',
+  'dock.sort.updated': 'Last modified',
+  'dock.sort.name': 'Name',
+
+  // Trash
+  'trash.title': 'Trash',
+  'trash.open': 'Trash ({count})',
+  'trash.back': 'Back to notes',
+  'trash.empty': 'Empty the trash',
+  'trash.isEmpty': 'The trash is empty',
+  'trash.restore': 'Restore',
+  'trash.purge': 'Delete permanently',
+  'trash.expires.today': 'purged today',
+  'trash.expires.days': 'purged in {count} d',
 
   // Folder list
   'folder.defaultName': 'My notes',
@@ -54,6 +71,16 @@ const en = {
   'note.unpin': 'Unpin',
   'note.redock': 'Put back in the dock',
   'note.changeColor': 'Change color',
+  'reminder.menu': 'Reminder',
+  'reminder.in1h': 'In 1 hour',
+  'reminder.tomorrow': 'Tomorrow 9:00',
+  'reminder.nextWeek': 'Monday 9:00',
+  'reminder.snooze': 'Snooze 10 min',
+  'reminder.clear': 'Remove the reminder',
+  'reminder.emptyBody': 'Reminder',
+  'reminder.due': 'Reminder: {time}',
+  'note.pinToTop': 'Pin to the top',
+  'note.unpinFromTop': 'Unpin from the top',
 
   // Delete confirmations (native dialogs)
   'confirm.delete': 'Delete',
@@ -63,6 +90,8 @@ const en = {
   'confirm.deleteFolder.title': 'Delete folder',
   'confirm.deleteFolder.message': 'Delete the folder "{name}"?',
   'confirm.deleteFolder.withNotes': 'Delete the folder "{name}" and its {count} note(s)?',
+  'confirm.emptyTrash.title': 'Empty the trash',
+  'confirm.emptyTrash.message': 'Permanently delete the {count} note(s) in the trash?',
   'confirm.irreversible': 'This action cannot be undone.',
 
   // Color picker
@@ -116,6 +145,8 @@ const en = {
 
   // Templates
   'note.createTemplate': 'Create template from this note',
+  'note.exportMarkdown': 'Export as Markdown...',
+  'noteLink.create': 'Create "{title}"',
   'template.groceries.name': 'Groceries list',
   'template.groceries.produce': 'Produce',
   'template.groceries.dairy': 'Dairy',
@@ -125,6 +156,8 @@ const en = {
   'template.meeting.agenda': 'Agenda',
   'template.meeting.notes': 'Notes',
   'template.meeting.actions': 'Action items',
+  'template.clipboard': 'Clipboard',
+  'template.clipboardTitle': 'Paste the clipboard into this note',
   'template.settingsPill': 'Template settings',
   'confirm.deleteTemplate.title': 'Delete template',
   'confirm.deleteTemplate.message': 'Delete the template "{name}"?',
@@ -137,6 +170,7 @@ const en = {
 
   // Tray
   'tray.toggleDock': 'Show / hide the dock',
+  'tray.quickCapture': 'Quick capture',
   'tray.settings': 'Settings...',
   'tray.quit': 'Quit',
 
@@ -155,6 +189,7 @@ const en = {
   'settings.syncError': 'Sync error',
   'settings.general': 'General',
   'settings.launchAtStartup': 'Launch AeroNotes at Windows startup',
+  'settings.dockAutoHide': 'Hide the dock until the cursor reaches the screen edge',
   'settings.display': 'Display',
   'settings.display.screen': 'Screen {index}',
   'settings.display.primary': 'Screen {index} (primary)',
@@ -163,6 +198,7 @@ const en = {
   'settings.pressShortcut': 'Press the new shortcut... (Esc to cancel)',
   'settings.globalShortcuts': 'Global shortcuts',
   'settings.markdownShortcuts': 'Markdown shortcuts (inside a note)',
+  'settings.shortcut.quickCapture': 'Quick capture',
   'settings.shortcut.toggleDock': 'Show / hide the dock',
   'settings.shortcut.heading1': 'Heading 1',
   'settings.shortcut.heading2': 'Heading 2',
@@ -198,6 +234,23 @@ const fr: Record<TranslationKey, string> = {
   'dock.searchFolders': 'Rechercher un dossier...',
   'dock.searchIn': 'Rechercher dans {name}...',
   'dock.searchInFallback': 'Rechercher une note...',
+  'dock.searchTrash': 'Rechercher dans la corbeille...',
+  'dock.sort': 'Trier les notes',
+  'dock.sort.manual': 'Ordre manuel',
+  'dock.sort.created': 'Date de création',
+  'dock.sort.updated': 'Dernière modification',
+  'dock.sort.name': 'Nom',
+
+  // Trash
+  'trash.title': 'Corbeille',
+  'trash.open': 'Corbeille ({count})',
+  'trash.back': 'Retour aux notes',
+  'trash.empty': 'Vider la corbeille',
+  'trash.isEmpty': 'La corbeille est vide',
+  'trash.restore': 'Restaurer',
+  'trash.purge': 'Supprimer définitivement',
+  'trash.expires.today': 'purge aujourd’hui',
+  'trash.expires.days': 'purge dans {count} j',
 
   // Folder list
   'folder.defaultName': 'Mes notes',
@@ -229,6 +282,16 @@ const fr: Record<TranslationKey, string> = {
   'note.unpin': 'Ne plus épingler',
   'note.redock': 'Ranger dans le dock',
   'note.changeColor': 'Changer la couleur',
+  'reminder.menu': 'Rappel',
+  'reminder.in1h': 'Dans 1 heure',
+  'reminder.tomorrow': 'Demain 9 h',
+  'reminder.nextWeek': 'Lundi 9 h',
+  'reminder.snooze': 'Reporter de 10 min',
+  'reminder.clear': 'Retirer le rappel',
+  'reminder.emptyBody': 'Rappel',
+  'reminder.due': 'Rappel : {time}',
+  'note.pinToTop': 'Épingler en haut',
+  'note.unpinFromTop': 'Ne plus épingler en haut',
 
   // Delete confirmations (native dialogs)
   'confirm.delete': 'Supprimer',
@@ -238,6 +301,8 @@ const fr: Record<TranslationKey, string> = {
   'confirm.deleteFolder.title': 'Supprimer le dossier',
   'confirm.deleteFolder.message': 'Supprimer le dossier « {name} » ?',
   'confirm.deleteFolder.withNotes': 'Supprimer le dossier « {name} » et ses {count} note(s) ?',
+  'confirm.emptyTrash.title': 'Vider la corbeille',
+  'confirm.emptyTrash.message': 'Supprimer définitivement les {count} note(s) de la corbeille ?',
   'confirm.irreversible': 'Cette action est irréversible.',
 
   // Color picker
@@ -292,6 +357,8 @@ const fr: Record<TranslationKey, string> = {
 
   // Templates
   'note.createTemplate': 'Créer un template depuis cette note',
+  'note.exportMarkdown': 'Exporter en Markdown...',
+  'noteLink.create': 'Créer « {title} »',
   'template.groceries.name': 'Liste de courses',
   'template.groceries.produce': 'Fruits & légumes',
   'template.groceries.dairy': 'Produits laitiers',
@@ -301,6 +368,8 @@ const fr: Record<TranslationKey, string> = {
   'template.meeting.agenda': 'Ordre du jour',
   'template.meeting.notes': 'Notes',
   'template.meeting.actions': 'Actions à faire',
+  'template.clipboard': 'Presse-papier',
+  'template.clipboardTitle': 'Coller le presse-papier dans cette note',
   'template.settingsPill': 'Paramètres des templates',
   'confirm.deleteTemplate.title': 'Supprimer le template',
   'confirm.deleteTemplate.message': 'Supprimer le template « {name} » ?',
@@ -314,6 +383,7 @@ const fr: Record<TranslationKey, string> = {
 
   // Tray
   'tray.toggleDock': 'Afficher / masquer le dock',
+  'tray.quickCapture': 'Capture rapide',
   'tray.settings': 'Paramètres...',
   'tray.quit': 'Quitter',
 
@@ -332,6 +402,7 @@ const fr: Record<TranslationKey, string> = {
   'settings.syncError': 'Erreur de synchronisation',
   'settings.general': 'Général',
   'settings.launchAtStartup': 'Lancer AeroNotes au démarrage de Windows',
+  'settings.dockAutoHide': 'Masquer le dock jusqu’à ce que le curseur touche le bord',
   'settings.display': 'Écran',
   'settings.display.screen': 'Écran {index}',
   'settings.display.primary': 'Écran {index} (principal)',
@@ -340,6 +411,7 @@ const fr: Record<TranslationKey, string> = {
   'settings.pressShortcut': 'Appuyez sur le nouveau raccourci... (Échap pour annuler)',
   'settings.globalShortcuts': 'Raccourcis globaux',
   'settings.markdownShortcuts': 'Raccourcis markdown (dans une note)',
+  'settings.shortcut.quickCapture': 'Capture rapide',
   'settings.shortcut.toggleDock': 'Afficher / masquer le dock',
   'settings.shortcut.heading1': 'Titre 1',
   'settings.shortcut.heading2': 'Titre 2',

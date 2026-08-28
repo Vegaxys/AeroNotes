@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Note } from '@shared/types'
 import { noteColorToCss } from '@shared/colorPalette'
+import { countTasks } from '@shared/taskProgress'
 import { t } from '@shared/i18n'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
@@ -28,12 +29,23 @@ function formatUpdatedAt(timestamp: number): string {
   return updated.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })
 }
 
+/** Reminder chip label: time alone today, day + time beyond. */
+function formatDueAt(timestamp: number): string {
+  const due = new Date(timestamp)
+  const time = due.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  const isToday = due.toDateString() === new Date().toDateString()
+  return isToday ? time : `${due.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })} ${time}`
+}
+
 export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardProps): React.JSX.Element {
   const detachNote = useNotesStore((s) => s.detachNote)
   const focusNote = useNotesStore((s) => s.focusNote)
   const updateNoteContent = useNotesStore((s) => s.updateNoteContent)
   const setNoteTitle = useNotesStore((s) => s.setNoteTitle)
+  const setNotePinned = useNotesStore((s) => s.setNotePinned)
   const notesExpanded = useSettingsStore((s) => s.notesExpanded)
+
+  const tasks = countTasks(note.content)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -61,8 +73,23 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
       onContextMenu={openContextMenu}
-      className="flex cursor-grab items-center gap-1.5 border-b border-black/10 px-3 py-2 active:cursor-grabbing"
+      className="group flex cursor-grab items-center gap-1.5 border-b border-black/10 px-3 py-2 active:cursor-grabbing"
     >
+      {/* Pin to the top of the list. Ghost star until hovered, so an unpinned
+       * note's header stays as clean as before. */}
+      <button
+        onClick={(event) => {
+          event.stopPropagation()
+          setNotePinned(note.id, !note.pinned)
+        }}
+        className={`shrink-0 text-xs leading-none transition-opacity ${
+          note.pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'
+        }`}
+        aria-label={note.pinned ? t('note.unpinFromTop') : t('note.pinToTop')}
+        title={note.pinned ? t('note.unpinFromTop') : t('note.pinToTop')}
+      >
+        {note.pinned ? '⭐' : '☆'}
+      </button>
       {isEditingTitle ? (
         <input
           autoFocus
@@ -82,7 +109,36 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
           {note.title || t('note.untitled')}
         </p>
       )}
+      {note.dueAt !== undefined && (
+        <span
+          className={`shrink-0 text-[10px] ${
+            note.dueAt <= Date.now() ? 'font-semibold text-red-800' : 'text-black/50'
+          }`}
+          title={t('reminder.due', { time: formatDueAt(note.dueAt) })}
+        >
+          ⏰ {formatDueAt(note.dueAt)}
+        </span>
+      )}
       {note.isDetached && <span className="shrink-0 text-[10px] text-black/50">{t('note.open')}</span>}
+    </div>
+  )
+
+  // Checklist progress, right under the header — only for notes that have one.
+  const progress = tasks.total > 0 && (
+    <div className="flex items-center gap-2 px-3 pt-2">
+      {/* Says what the bar measures: this note's checklist, not reading progress. */}
+      <span className="shrink-0 text-[10px] leading-none text-black/50" aria-hidden>
+        ☑
+      </span>
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
+        <div
+          className="h-full rounded-full bg-black/40 transition-[width] duration-200"
+          style={{ width: `${(tasks.done / tasks.total) * 100}%` }}
+        />
+      </div>
+      <span className="shrink-0 text-[10px] text-black/50">
+        {tasks.done}/{tasks.total}
+      </span>
     </div>
   )
 
@@ -111,6 +167,7 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
         style={{ background: noteColorToCss(note.color) }}
       >
         {header}
+        {progress}
         <div className="px-3 py-2">
           <p className={`${notesExpanded ? 'line-clamp-2' : 'line-clamp-3'} text-xs text-black/60`}>
             {note.contentPreview}
@@ -131,6 +188,7 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
       style={{ background: noteColorToCss(note.color) }}
     >
       {header}
+      {progress}
       <NoteEditor
         compact
         noteId={note.id}

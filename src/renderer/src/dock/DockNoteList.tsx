@@ -1,13 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { Note, NoteSortMode } from '@shared/types'
 import { t } from '@shared/i18n'
 import { useNotesStore } from '@renderer/state/useNotesStore'
+import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { DockNotePreview } from './DockNotePreview'
+
+/** Pinned notes come first whatever the mode; these order the rest. */
+const COMPARATORS: Record<NoteSortMode, (a: Note, b: Note) => number> = {
+  manual: (a, b) => a.dockIndex - b.dockIndex,
+  created: (a, b) => b.createdAt - a.createdAt,
+  updated: (a, b) => b.updatedAt - a.updatedAt,
+  name: (a, b) => a.title.localeCompare(b.title)
+}
 
 export function DockNoteList(): React.JSX.Element {
   const notes = useNotesStore((s) => s.notes)
   const currentFolderId = useNotesStore((s) => s.currentFolderId)
   const searchQuery = useNotesStore((s) => s.searchQuery)
   const reorderNotes = useNotesStore((s) => s.reorderNotes)
+  const sortMode = useSettingsStore((s) => s.sortMode)
+  const setSortMode = useSettingsStore((s) => s.setSortMode)
   const detachNote = useNotesStore((s) => s.detachNote)
   const remoteRevisions = useNotesStore((s) => s.remoteRevisions)
   const [draggedId, setDraggedId] = useState<string | null>(null)
@@ -16,8 +28,11 @@ export function DockNoteList(): React.JSX.Element {
     () =>
       notes
         .filter((note) => note.folderId === currentFolderId)
-        .sort((a, b) => a.dockIndex - b.dockIndex),
-    [notes, currentFolderId]
+        .sort(
+          (a, b) =>
+            Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || COMPARATORS[sortMode](a, b)
+        ),
+    [notes, currentFolderId, sortMode]
   )
 
   const filteredNotes = useMemo(() => {
@@ -52,6 +67,9 @@ export function DockNoteList(): React.JSX.Element {
     order.splice(fromIndex, 1)
     order.splice(toIndex, 0, draggedId)
     reorderNotes(order)
+    // Dropping a note IS a manual ordering: persist what the user just built
+    // instead of letting the active sort mode undo it on the next render.
+    setSortMode('manual')
   }
 
   const handleDragEnd = (id: string, event: React.DragEvent<HTMLDivElement>): void => {
@@ -65,7 +83,7 @@ export function DockNoteList(): React.JSX.Element {
   }
 
   return (
-    <div className="dock-scroll flex-1 space-y-2 overflow-y-auto p-3">
+    <div className="dock-scroll dock-scroll-list flex-1 space-y-2 overflow-y-auto p-3">
       {filteredNotes.map((note) => (
         <div
           // isDetached and the remote revision in the key: the embedded editor
