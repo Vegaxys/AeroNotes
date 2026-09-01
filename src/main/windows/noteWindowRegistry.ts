@@ -1,7 +1,13 @@
 import { BrowserWindow, screen } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
 import { notesStore } from '../store/notesStore'
-import { createNoteWindow, type NoteWindowOptions, type ScreenPosition } from './noteWindow'
+import {
+  createNoteWindow,
+  NOTE_MIN_HEIGHT,
+  NOTE_MIN_WIDTH,
+  type NoteWindowOptions,
+  type ScreenPosition
+} from './noteWindow'
 
 const noteWindows = new Map<string, BrowserWindow>()
 
@@ -12,8 +18,6 @@ const boundsPersistSuspended = new Set<string>()
 
 const COLLAPSED_HEIGHT_PX = 44
 const COLLAPSE_ANIM_MS = 160
-const NOTE_MIN_WIDTH = 260
-const NOTE_MIN_HEIGHT = 220
 
 /** Win32 non-client double-click; the titlebar drag region hit-tests as HTCAPTION. */
 const WM_NCLBUTTONDBLCLK = 0x00a3

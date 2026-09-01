@@ -115,6 +115,10 @@ const en = {
   'editor.linkToFolder': 'Link to a folder',
   'editor.webLink': 'Web link',
   'editor.removeLink': 'Remove link',
+  'editor.find.placeholder': 'Search in the note',
+  'editor.find.previous': 'Previous match (Shift+Enter)',
+  'editor.find.next': 'Next match (Enter)',
+  'editor.find.close': 'Close the search (Esc)',
 
   // Table controls
   'table.addColumn': 'Add column',
@@ -190,6 +194,7 @@ const en = {
   'settings.general': 'General',
   'settings.launchAtStartup': 'Launch AeroNotes at Windows startup',
   'settings.dockAutoHide': 'Hide the dock until the cursor reaches the screen edge',
+  'settings.showTaskProgress': 'Show the checklist progress bar on notes',
   'settings.display': 'Display',
   'settings.display.screen': 'Screen {index}',
   'settings.display.primary': 'Screen {index} (primary)',
@@ -327,6 +332,10 @@ const fr: Record<TranslationKey, string> = {
   'editor.linkToFolder': 'Lien vers un dossier',
   'editor.webLink': 'Lien web',
   'editor.removeLink': 'Retirer le lien',
+  'editor.find.placeholder': 'Rechercher dans la note',
+  'editor.find.previous': 'Occurrence précédente (Maj+Entrée)',
+  'editor.find.next': 'Occurrence suivante (Entrée)',
+  'editor.find.close': 'Fermer la recherche (Échap)',
 
   // Table controls
   'table.addColumn': 'Ajouter une colonne',
@@ -403,6 +412,7 @@ const fr: Record<TranslationKey, string> = {
   'settings.general': 'Général',
   'settings.launchAtStartup': 'Lancer AeroNotes au démarrage de Windows',
   'settings.dockAutoHide': 'Masquer le dock jusqu’à ce que le curseur touche le bord',
+  'settings.showTaskProgress': 'Afficher la barre de progression des cases à cocher',
   'settings.display': 'Écran',
   'settings.display.screen': 'Écran {index}',
   'settings.display.primary': 'Écran {index} (principal)',

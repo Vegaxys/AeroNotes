@@ -143,4 +143,6 @@ export interface AppSettings {
   sortMode?: NoteSortMode
   /** Taskbar-style auto-hide: the dock retracts until the cursor reaches its edge. */
   dockAutoHide?: boolean
+  /** Checklist progress bar on dock cards. Absent = on (the pre-setting behaviour). */
+  showTaskProgress?: boolean
 }

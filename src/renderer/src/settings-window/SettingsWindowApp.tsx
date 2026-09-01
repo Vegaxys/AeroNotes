@@ -392,6 +392,20 @@ export function SettingsWindowApp(): React.JSX.Element | null {
               className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
             />
           </label>
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
+            <span>{t('settings.showTaskProgress')}</span>
+            <input
+              type="checkbox"
+              // Absent in a store written before the setting existed: on.
+              checked={settings.showTaskProgress ?? true}
+              onChange={() =>
+                window.aeronotes.setSettings({
+                  showTaskProgress: !(settings.showTaskProgress ?? true)
+                })
+              }
+              className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+            />
+          </label>
           <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-white/10 px-3 py-2.5 text-sm hover:bg-white/[0.04]">
             <span>{t('settings.shortcut.toggleDock')}</span>
             <ShortcutRecorder

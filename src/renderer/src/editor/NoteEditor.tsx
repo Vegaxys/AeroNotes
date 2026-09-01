@@ -4,11 +4,13 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import { t } from '@shared/i18n'
 import { createNoteEditorExtensions } from './extensions'
 import { BubbleToolbar } from './BubbleToolbar'
+import { FindBar } from './FindBar'
 import { TableControls } from './TableControls'
 import { BlockDragHandle } from './BlockDragHandle'
 import { TemplateCarousel } from './TemplateCarousel'
 import { HIGHLIGHT_COLORS } from './highlightColors'
 import { imagePasteDropProps } from './imagePasteDrop'
+import { listPasteProps } from './listPaste'
 import '../styles/editor.css'
 
 interface NoteEditorProps {
@@ -44,6 +46,8 @@ export function NoteEditor({
   const containerRef = useRef<HTMLDivElement>(null)
   const [highlightMenu, setHighlightMenu] = useState<{ top: number; left: number } | null>(null)
   const [isEmpty, setIsEmpty] = useState(false)
+  // Ctrl+F. The token re-focuses the input when the bar is already open.
+  const [find, setFind] = useState<{ focusToken: number } | null>(null)
 
   const editor = useEditor({
     immediatelyRender: true,
@@ -66,6 +70,7 @@ export function NoteEditor({
     content,
     editorProps: {
       ...imagePasteDropProps,
+      ...listPasteProps,
       // No correction UI is wired up, so the spellcheck squiggly underline is just noise.
       attributes: { spellcheck: 'false' }
     },
@@ -75,6 +80,23 @@ export function NoteEditor({
       onChange?.(editor.getJSON())
     }
   })
+
+  const openFind = (): void =>
+    setFind((current) => ({ focusToken: (current?.focusToken ?? 0) + 1 }))
+
+  // A detached post-it is a window of its own: Ctrl+F must work wherever the
+  // focus sits in it. Dock cards share their window with every other card, so
+  // there the shortcut only counts inside the card it was typed in.
+  useEffect(() => {
+    if (compact) return
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'f') return
+      event.preventDefault()
+      openFind()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [compact])
 
   // The click that opens the menu is already finished when this effect runs,
   // so the very next pointerdown outside the popup closes it.
@@ -105,10 +127,26 @@ export function NoteEditor({
   return (
     <div
       ref={containerRef}
+      onKeyDown={
+        compact
+          ? (event) => {
+              if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'f') return
+              event.preventDefault()
+              openFind()
+            }
+          : undefined
+      }
       className={`note-editor relative overflow-y-auto text-sm text-black/90 ${
         compact ? 'max-h-80 px-3 py-2' : 'h-full py-3 pl-10 pr-4'
       }`}
     >
+      {find && (
+        <FindBar
+          editor={editor}
+          focusToken={find.focusToken}
+          onClose={() => setFind(null)}
+        />
+      )}
       <BubbleToolbar editor={editor} />
       {!compact && <BlockDragHandle editor={editor} containerRef={containerRef} noteId={noteId} />}
       {!compact && <TableControls editor={editor} containerRef={containerRef} />}

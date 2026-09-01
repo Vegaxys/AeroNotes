@@ -1,10 +1,13 @@
 import { join } from 'path'
 import { BrowserWindow, screen } from 'electron'
-import type { Note } from '@shared/types'
+import type { Note, WindowBounds } from '@shared/types'
 import { getAppIconPath } from '../appIcon'
 
 const DEFAULT_WIDTH = 420
 const DEFAULT_HEIGHT = 520
+
+export const NOTE_MIN_WIDTH = 260
+export const NOTE_MIN_HEIGHT = 220
 
 export interface ScreenPosition {
   x: number
@@ -29,6 +32,12 @@ function forceInitialPaint(window: BrowserWindow): void {
 export interface NoteWindowOptions {
   /** Opened by the global quick-capture shortcut (adds the clipboard pill). */
   quickCapture?: boolean
+  /**
+   * Exact opening geometry, overriding both the note's remembered bounds and
+   * `dropPosition`. Not persisted on its own: the note only remembers a size
+   * once the user actually moves or resizes the window.
+   */
+  initialBounds?: WindowBounds
 }
 
 export function createNoteWindow(
@@ -36,16 +45,17 @@ export function createNoteWindow(
   dropPosition?: ScreenPosition,
   options?: NoteWindowOptions
 ): BrowserWindow {
-  const bounds = note.windowBounds ?? {
-    x: 160,
-    y: 160,
-    width: DEFAULT_WIDTH,
-    height: DEFAULT_HEIGHT
-  }
+  const bounds = options?.initialBounds ??
+    note.windowBounds ?? {
+      x: 160,
+      y: 160,
+      width: DEFAULT_WIDTH,
+      height: DEFAULT_HEIGHT
+    }
 
   // Dragged out of the dock: open right under the cursor (title bar centered
   // on it), clamped to the target display's work area.
-  if (dropPosition) {
+  if (dropPosition && !options?.initialBounds) {
     const workArea = screen.getDisplayNearestPoint(dropPosition).workArea
     bounds.x = Math.min(
       Math.max(Math.round(dropPosition.x - bounds.width / 2), workArea.x),
@@ -60,8 +70,8 @@ export function createNoteWindow(
   const window = new BrowserWindow({
     ...bounds,
     icon: getAppIconPath(),
-    minWidth: 260,
-    minHeight: 220,
+    minWidth: NOTE_MIN_WIDTH,
+    minHeight: NOTE_MIN_HEIGHT,
     frame: false,
     transparent: true,
     hasShadow: true,

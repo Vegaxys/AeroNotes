@@ -19,7 +19,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   notesExpanded: true,
   locale: 'system',
   toggleShortcut: 'CommandOrControl+Shift+N',
-  disabledBuiltinTemplates: []
+  disabledBuiltinTemplates: [],
+  showTaskProgress: true
 }
 
 const diskStore = new Store<PersistedSchema>({

@@ -19,6 +19,7 @@ import { WebLinkClick } from './webLinkClick'
 import { HighlightClick, type HighlightClickOptions } from './highlightClick'
 import { NoteLink } from './noteLink'
 import { AlphaOrderedList } from './alphaOrderedList'
+import { FindInNote } from './findInNote'
 
 interface NoteEditorExtensionOptions extends HighlightClickOptions {
   /** Note being edited — the `[[` picker offers its folder's other notes. */
@@ -65,6 +66,7 @@ export function createNoteEditorExtensions(
     NoteLink.configure({ noteId: options.noteId ?? '' }),
     WebLinkClick,
     AlphaOrderedList,
+    FindInNote,
     SlashCommand
   ]
 }

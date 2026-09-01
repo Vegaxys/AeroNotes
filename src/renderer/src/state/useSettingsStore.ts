@@ -12,6 +12,7 @@ interface SettingsState {
   sortMode: NoteSortMode
   setSortMode: (sortMode: NoteSortMode) => void
   dockAutoHide: boolean
+  showTaskProgress: boolean
   toggleDockSide: () => void
   toggleDockCollapsed: () => void
   toggleNotesExpanded: () => void
@@ -27,7 +28,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     set({
       ...settings,
       sortMode: settings.sortMode ?? 'manual',
-      dockAutoHide: Boolean(settings.dockAutoHide)
+      dockAutoHide: Boolean(settings.dockAutoHide),
+      showTaskProgress: settings.showTaskProgress ?? true
     })
   }
   window.aeronotes.getSettings().then(applySettings)
@@ -43,6 +45,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     sortMode: 'manual',
     setSortMode: (sortMode) => window.aeronotes.setSettings({ sortMode }),
     dockAutoHide: false,
+    showTaskProgress: true,
     toggleDockSide: () => {
       const dockSide: DockSide = get().dockSide === 'right' ? 'left' : 'right'
       window.aeronotes.setSettings({ dockSide })

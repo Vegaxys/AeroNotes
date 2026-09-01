@@ -44,6 +44,7 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
   const setNoteTitle = useNotesStore((s) => s.setNoteTitle)
   const setNotePinned = useNotesStore((s) => s.setNotePinned)
   const notesExpanded = useSettingsStore((s) => s.notesExpanded)
+  const showTaskProgress = useSettingsStore((s) => s.showTaskProgress)
 
   const tasks = countTasks(note.content)
 
@@ -123,8 +124,9 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
     </div>
   )
 
-  // Checklist progress, right under the header — only for notes that have one.
-  const progress = tasks.total > 0 && (
+  // Checklist progress, right under the header — only for notes that have one,
+  // and only while the setting keeps it on.
+  const progress = showTaskProgress && tasks.total > 0 && (
     <div className="flex items-center gap-2 px-3 pt-2">
       {/* Says what the bar measures: this note's checklist, not reading progress. */}
       <span className="shrink-0 text-[10px] leading-none text-black/50" aria-hidden>
@@ -162,7 +164,9 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
         ref={cardRef}
         onClick={() => (note.isDetached ? focusNote(note.id) : detachNote(note.id))}
         className={`cursor-pointer select-none rounded-[var(--radius-md)] text-black/80 shadow-md ${
-          note.isDetached ? 'ring-2 ring-offset-2 ring-white' : ''
+          // Inset: the highlight is drawn just inside the card's own outline,
+          // so an open note doesn't grow a halo that shifts the list's rhythm.
+          note.isDetached ? 'ring-2 ring-inset ring-white' : ''
         }`}
         style={{ background: noteColorToCss(note.color) }}
       >

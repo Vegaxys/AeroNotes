@@ -1,7 +1,9 @@
 import { screen } from 'electron'
+import type { WindowBounds } from '@shared/types'
 import { t } from '@shared/i18n'
 import { notesStore } from '../store/notesStore'
 import { settingsStore } from '../store/settingsStore'
+import { NOTE_MIN_HEIGHT } from './noteWindow'
 import { detachNote, focusNote, getNoteWindow } from './noteWindowRegistry'
 
 /** Note id of the capture window currently open, if any. */
@@ -13,6 +15,36 @@ let capturingNoteId: string | null = null
  * this the capture would cancel itself before the user can type.
  */
 const BLUR_GRACE_MS = 800
+
+/** Share of the screen width the capture takes. */
+const WIDTH_RATIO = 1 / 4
+/** Gap between the capture and the bottom of the work area. */
+const BOTTOM_MARGIN_PX = 24
+
+/**
+ * A wide 16/9 strip along the bottom of the active screen: a capture is a
+ * couple of lines jotted down, not a document, and down there it never covers
+ * what the user was looking at.
+ *
+ * Width is a quarter of the screen; on a narrow display that would fall under
+ * a note window's minimum height, so the ratio is kept and the strip grows
+ * instead of being squashed.
+ */
+function quickCaptureBounds(): WindowBounds {
+  const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+  let width = Math.round(workArea.width * WIDTH_RATIO)
+  let height = Math.round((width * 9) / 16)
+  if (height < NOTE_MIN_HEIGHT) {
+    height = NOTE_MIN_HEIGHT
+    width = Math.round((height * 16) / 9)
+  }
+  return {
+    x: Math.round(workArea.x + (workArea.width - width) / 2),
+    y: workArea.y + workArea.height - height - BOTTOM_MARGIN_PX,
+    width,
+    height
+  }
+}
 
 /**
  * Where a captured note lands: the folder the dock has open, or the first one
@@ -36,10 +68,10 @@ function isUntouched(noteId: string): boolean {
 
 /**
  * Global-shortcut capture: creates a note and opens it as a post-it above
- * everything, centered on the screen under the cursor. It IS a regular
- * detached note window (same frame, same editor, same persistence) — only its
- * placement, its always-on-top, the Escape/blur-to-cancel and the clipboard
- * pill the renderer shows for `quickCapture=1` are specific.
+ * everything, as a 16/9 strip along the bottom of the screen under the cursor.
+ * It IS a regular detached note window (same frame, same editor, same
+ * persistence) — only its placement, its always-on-top, the Escape/blur-to-cancel
+ * and the clipboard pill the renderer shows for `quickCapture=1` are specific.
  *
  * The note is created up front (the editor needs something to write into) but
  * kept out of every dock list until it holds text: renderers only learn about
@@ -66,15 +98,10 @@ export function openQuickCapture(onChanged: () => void): void {
     if (!isUntouched(note.id)) onChanged()
   }
 
-  const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
-  detachNote(
-    note.id,
-    broadcastIfWritten,
-    // detachNote centers the title bar on this point, then clamps to the work
-    // area — so this lands the window in the middle of the active screen.
-    { x: Math.round(workArea.x + workArea.width / 2), y: Math.round(workArea.y + workArea.height / 3) },
-    { quickCapture: true }
-  )
+  detachNote(note.id, broadcastIfWritten, undefined, {
+    quickCapture: true,
+    initialBounds: quickCaptureBounds()
+  })
 
   const window = getNoteWindow(note.id)
   if (!window) return
