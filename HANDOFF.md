@@ -4,7 +4,7 @@ Contexte pour reprendre le développement dans une nouvelle session. Voir [READM
 
 ## État actuel
 
-Le prototype est fonctionnel et empaqueté (`release/AeroNotes Setup 0.4.0.exe`). Toutes les fonctionnalités de base marchent : overlay/dock, éditeur riche (Markdown auto, BubbleMenu, listes/checklists/toggles/tableaux, liens locaux, images), notes détachables, couleurs/gradients personnalisés, persistance, tray/raccourci global.
+Le prototype est fonctionnel et empaqueté (`release/AeroNotes Setup 0.5.0.exe`). Toutes les fonctionnalités de base marchent : overlay/dock, éditeur riche (Markdown auto, BubbleMenu, listes/checklists/toggles/tableaux, liens locaux, images), notes détachables, couleurs/gradients personnalisés, persistance, tray/raccourci global.
 
 Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique git pour le détail complet — commits `dd1f800`, `94997ac`, `ed6c5b9`). Le morceau le plus difficile a été le **glisser-déposer de bloc** (voir section dédiée ci-dessous).
 
