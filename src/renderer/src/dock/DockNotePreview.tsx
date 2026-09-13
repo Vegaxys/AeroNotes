@@ -13,6 +13,10 @@ interface DockNoteCardProps {
   /** Drag props live on the card header, not the whole card: the editor body must keep text selection usable. */
   onDragStart: () => void
   onDragEnd: (event: React.DragEvent<HTMLDivElement>) => void
+  /** Ctrl multi-selection is armed: the whole card becomes one selection target. */
+  selectionMode?: boolean
+  selected?: boolean
+  onToggleSelect?: () => void
 }
 
 function formatUpdatedAt(timestamp: number): string {
@@ -37,7 +41,14 @@ function formatDueAt(timestamp: number): string {
   return isToday ? time : `${due.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })} ${time}`
 }
 
-export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardProps): React.JSX.Element {
+export function DockNotePreview({
+  note,
+  onDragStart,
+  onDragEnd,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect
+}: DockNoteCardProps): React.JSX.Element {
   const detachNote = useNotesStore((s) => s.detachNote)
   const focusNote = useNotesStore((s) => s.focusNote)
   const updateNoteContent = useNotesStore((s) => s.updateNoteContent)
@@ -144,6 +155,38 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
     </div>
   )
 
+  /**
+   * Full-card click shield, on top of everything while Ctrl-selection is armed.
+   * A transparent layer rather than per-surface click handlers: in "Expand
+   * notes" mode the card body is a live editor, and a Ctrl+click there would
+   * otherwise land in ProseMirror instead of toggling the note.
+   */
+  const selectionLayer = selectionMode && (
+    <>
+      <button
+        type="button"
+        aria-pressed={selected}
+        aria-label={selected ? t('selection.deselect') : t('selection.select')}
+        onClick={(event) => {
+          event.stopPropagation()
+          onToggleSelect?.()
+        }}
+        onContextMenu={(event) => event.preventDefault()}
+        className="absolute inset-0 z-20 cursor-pointer rounded-[var(--radius-md)]"
+      />
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute right-2 top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full border text-[11px] leading-none ${
+          selected
+            ? 'border-white bg-white text-black'
+            : 'border-black/30 bg-black/10 text-transparent'
+        }`}
+      >
+        ✓
+      </span>
+    </>
+  )
+
   const contextMenu = menu && (
     <NoteHeaderMenu
       note={note}
@@ -163,13 +206,18 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
       <div
         ref={cardRef}
         onClick={() => (note.isDetached ? focusNote(note.id) : detachNote(note.id))}
-        className={`cursor-pointer select-none rounded-[var(--radius-md)] text-black/80 shadow-md ${
+        className={`relative cursor-pointer select-none rounded-[var(--radius-md)] text-black/80 shadow-md ${
           // Inset: the highlight is drawn just inside the card's own outline,
           // so an open note doesn't grow a halo that shifts the list's rhythm.
-          note.isDetached ? 'ring-2 ring-inset ring-white' : ''
+          selected
+            ? 'ring-2 ring-inset ring-[var(--color-accent-strong)]'
+            : note.isDetached
+              ? 'ring-2 ring-inset ring-white'
+              : ''
         }`}
         style={{ background: noteColorToCss(note.color) }}
       >
+        {selectionLayer}
         {header}
         {progress}
         <div className="px-3 py-2">
@@ -188,9 +236,12 @@ export function DockNotePreview({ note, onDragStart, onDragEnd }: DockNoteCardPr
   return (
     <div
       ref={cardRef}
-      className="overflow-hidden rounded-[var(--radius-md)] text-black/80 shadow-md"
+      className={`relative overflow-hidden rounded-[var(--radius-md)] text-black/80 shadow-md ${
+        selected ? 'ring-2 ring-inset ring-[var(--color-accent-strong)]' : ''
+      }`}
       style={{ background: noteColorToCss(note.color) }}
     >
+      {selectionLayer}
       {header}
       {progress}
       <NoteEditor

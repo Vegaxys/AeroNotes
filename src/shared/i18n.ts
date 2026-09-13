@@ -30,6 +30,16 @@ const en = {
   'dock.sort.updated': 'Last modified',
   'dock.sort.name': 'Name',
 
+  // Dock multi-selection (Ctrl+click)
+  'selection.count.one': '{count} note selected',
+  'selection.count.many': '{count} notes selected',
+  'selection.select': 'Select this note',
+  'selection.deselect': 'Deselect this note',
+  'selection.move': 'Move',
+  'selection.trash': 'Trash',
+  'selection.clear': 'Clear the selection',
+  'selection.noOtherFolder': 'No other folder',
+
   // Trash
   'trash.title': 'Trash',
   'trash.open': 'Trash ({count})',
@@ -130,6 +140,7 @@ const en = {
   // Slash commands
   'slash.heading1': 'Heading 1',
   'slash.heading2': 'Heading 2',
+  'slash.heading3': 'Heading 3',
   'slash.bulletList': 'Bullet list',
   'slash.numberedList': 'Numbered list',
   'slash.checklist': 'Checklist',
@@ -246,6 +257,16 @@ const fr: Record<TranslationKey, string> = {
   'dock.sort.updated': 'Dernière modification',
   'dock.sort.name': 'Nom',
 
+  // Dock multi-selection (Ctrl+click)
+  'selection.count.one': '{count} note sélectionnée',
+  'selection.count.many': '{count} notes sélectionnées',
+  'selection.select': 'Sélectionner cette note',
+  'selection.deselect': 'Désélectionner cette note',
+  'selection.move': 'Déplacer',
+  'selection.trash': 'Corbeille',
+  'selection.clear': 'Annuler la sélection',
+  'selection.noOtherFolder': 'Aucun autre dossier',
+
   // Trash
   'trash.title': 'Corbeille',
   'trash.open': 'Corbeille ({count})',
@@ -347,6 +368,7 @@ const fr: Record<TranslationKey, string> = {
   // Slash commands
   'slash.heading1': 'Titre 1',
   'slash.heading2': 'Titre 2',
+  'slash.heading3': 'Titre 3',
   'slash.bulletList': 'Liste à puces',
   'slash.numberedList': 'Liste numérotée',
   'slash.checklist': 'Checklist',

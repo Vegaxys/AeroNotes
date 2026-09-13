@@ -14,6 +14,12 @@ interface NotesState {
   /** The dock is showing the trash instead of the folder/note list. */
   trashView: boolean
   setTrashView: (trashView: boolean) => void
+  /** Ctrl-click multi-selection in the dock's note list. Dock-local, not persisted. */
+  selectedNoteIds: string[]
+  toggleNoteSelection: (id: string) => void
+  clearNoteSelection: () => void
+  moveNotesToFolder: (ids: string[], folderId: string) => void
+  deleteNotes: (ids: string[]) => void
   /** Bumped when a note changes from the cloud — keys editor remounts. */
   remoteRevisions: Record<string, number>
   searchQuery: string
@@ -88,19 +94,40 @@ export const useNotesStore = create<NotesState>((set, get) => {
     templates: [],
     currentFolderId: null,
     trashView: false,
-    setTrashView: (trashView) => set({ trashView, searchQuery: '' }),
+    setTrashView: (trashView) => set({ trashView, searchQuery: '', selectedNoteIds: [] }),
+    selectedNoteIds: [],
+    toggleNoteSelection: (id) => {
+      const selected = get().selectedNoteIds
+      set({
+        selectedNoteIds: selected.includes(id)
+          ? selected.filter((selectedId) => selectedId !== id)
+          : [...selected, id]
+      })
+    },
+    clearNoteSelection: () => set({ selectedNoteIds: [] }),
+    // Batch actions loop the single-note IPC calls rather than adding batch
+    // channels: each one already broadcasts, and a dock folder holds tens of
+    // notes, not thousands.
+    moveNotesToFolder: (ids, folderId) => {
+      ids.forEach((id) => window.aeronotes.moveNoteToFolder(id, folderId))
+      set({ selectedNoteIds: [] })
+    },
+    deleteNotes: (ids) => {
+      ids.forEach((id) => void window.aeronotes.deleteNote(id))
+      set({ selectedNoteIds: [] })
+    },
     remoteRevisions: {},
     searchQuery: '',
     setSearchQuery: (query) => set({ searchQuery: query }),
     enterFolder: (id) => {
       window.aeronotes.setSettings({ lastOpenFolderId: id })
-      set({ currentFolderId: id, searchQuery: '' })
+      set({ currentFolderId: id, searchQuery: '', selectedNoteIds: [] })
     },
     leaveFolder: () => {
       // Leaving a folder hides its notes everywhere, desktop post-its included.
       window.aeronotes.closeAllNoteWindows()
       window.aeronotes.setSettings({ lastOpenFolderId: null })
-      set({ currentFolderId: null, searchQuery: '', trashView: false })
+      set({ currentFolderId: null, searchQuery: '', trashView: false, selectedNoteIds: [] })
     },
     // New notes land at the top of the list AND open as a post-it, cursor
     // ready — creating a note is always followed by writing in it.

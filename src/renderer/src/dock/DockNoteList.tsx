@@ -4,6 +4,7 @@ import { t } from '@shared/i18n'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { DockNotePreview } from './DockNotePreview'
+import { useCtrlKeyHeld } from './useCtrlKeyHeld'
 
 /** Pinned notes come first whatever the mode; these order the rest. */
 const COMPARATORS: Record<NoteSortMode, (a: Note, b: Note) => number> = {
@@ -22,7 +23,15 @@ export function DockNoteList(): React.JSX.Element {
   const setSortMode = useSettingsStore((s) => s.setSortMode)
   const detachNote = useNotesStore((s) => s.detachNote)
   const remoteRevisions = useNotesStore((s) => s.remoteRevisions)
+  const selectedNoteIds = useNotesStore((s) => s.selectedNoteIds)
+  const toggleNoteSelection = useNotesStore((s) => s.toggleNoteSelection)
+  const clearNoteSelection = useNotesStore((s) => s.clearNoteSelection)
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const ctrlHeld = useCtrlKeyHeld()
+
+  // Holding Ctrl arms the selection; an existing selection keeps it armed once
+  // the key is released, so the floating bar can be reached with the mouse.
+  const selectionMode = ctrlHeld || selectedNoteIds.length > 0
 
   const sortedNotes = useMemo(
     () =>
@@ -58,6 +67,17 @@ export function DockNoteList(): React.JSX.Element {
     return () => document.removeEventListener('dragover', handleDragOver)
   }, [draggedId])
 
+  // Escape is the way out of a selection — the overlay is not focusable, so
+  // the listener has to live on the window and not on a focused element.
+  useEffect(() => {
+    if (selectedNoteIds.length === 0) return
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') clearNoteSelection()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedNoteIds.length, clearNoteSelection])
+
   const handleDropOn = (targetId: string): void => {
     if (!draggedId || draggedId === targetId) return
     const order = sortedNotes.map((n) => n.id)
@@ -83,7 +103,13 @@ export function DockNoteList(): React.JSX.Element {
   }
 
   return (
-    <div className="dock-scroll dock-scroll-list flex-1 space-y-2 overflow-y-auto p-3">
+    <div
+      // Extra bottom padding while the floating selection bar is up, so the
+      // last card can still be scrolled clear of it.
+      className={`dock-scroll dock-scroll-list flex-1 space-y-2 overflow-y-auto p-3 ${
+        selectedNoteIds.length > 0 ? 'pb-16' : ''
+      }`}
+    >
       {filteredNotes.map((note) => (
         <div
           // isDetached and the remote revision in the key: the embedded editor
@@ -99,6 +125,9 @@ export function DockNoteList(): React.JSX.Element {
         >
           <DockNotePreview
             note={note}
+            selectionMode={selectionMode}
+            selected={selectedNoteIds.includes(note.id)}
+            onToggleSelect={() => toggleNoteSelection(note.id)}
             onDragStart={() => setDraggedId(note.id)}
             onDragEnd={(event) => handleDragEnd(note.id, event)}
           />

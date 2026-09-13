@@ -8,7 +8,7 @@ import type {
   Template,
   WindowBounds
 } from '@shared/types'
-import { GRADIENT_PRESETS, SOLID_PRESETS } from '@shared/colorPalette'
+import { GRADIENT_PRESETS, NOTE_COLOR_ROTATION, SOLID_PRESETS } from '@shared/colorPalette'
 import { extractPlainText } from '@shared/plainTextExtract'
 import { TRASH_TTL_MS } from '@shared/trash'
 import { t } from '@shared/i18n'
@@ -335,7 +335,8 @@ class NotesStore {
       title: t('note.defaultTitle'),
       content: { type: 'doc', content: [{ type: 'paragraph' }] },
       contentPreview: '',
-      color: SOLID_PRESETS[this.notes.size % SOLID_PRESETS.length],
+      // Gradients are part of the rotation, not a manual-only choice.
+      color: NOTE_COLOR_ROTATION[this.notes.size % NOTE_COLOR_ROTATION.length],
       folderId,
       dockIndex: 0,
       isDetached: false,

@@ -12,6 +12,7 @@ import { registerShellHandlers } from './ipc/shellHandlers'
 import { registerSyncHandlers } from './ipc/syncHandlers'
 import { initSync } from './sync/syncEngine'
 import { registerImageProtocol } from './protocols/imageProtocol'
+import { applyWindowSecurityPolicy } from './security'
 import { applyLaunchAtStartup } from './startup'
 import { notesStore } from './store/notesStore'
 import { settingsStore } from './store/settingsStore'
@@ -37,6 +38,9 @@ app.whenReady().then(() => {
   // Windows attributes toast notifications to this id; without it reminders
   // either don't show or show as "electron.app.Electron".
   app.setAppUserModelId('com.aeronotes.app')
+  // Before the first window exists: the policy is installed through
+  // `web-contents-created`, which only sees windows created after it.
+  applyWindowSecurityPolicy()
   registerImageProtocol()
   registerOverlayHandlers(() => overlayWindow)
   registerNotesHandlers()

@@ -5,6 +5,7 @@ import { DockCollapseTab } from './DockCollapseTab'
 import { DockFolderList } from './DockFolderList'
 import { DockHeader } from './DockHeader'
 import { DockNoteList } from './DockNoteList'
+import { DockSelectionBar } from './DockSelectionBar'
 import { DockTrashList } from './DockTrashList'
 
 /** Half-height of the gradient halo shown around the collapse tab while collapsed. */
@@ -60,7 +61,12 @@ export function Dock(): React.JSX.Element {
           {trashView ? (
             <DockTrashList />
           ) : currentFolderId !== null ? (
-            <DockNoteList />
+            <>
+              <DockNoteList />
+              {/* Sibling of the list, not a child: the bar floats over the
+               * scrolling notes instead of scrolling away with them. */}
+              <DockSelectionBar />
+            </>
           ) : (
             <DockFolderList />
           )}

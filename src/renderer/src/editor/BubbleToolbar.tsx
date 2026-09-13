@@ -108,6 +108,12 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element
         H2
       </ToolbarButton>
       <ToolbarButton
+        active={editor.isActive('heading', { level: 3 })}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+      >
+        H3
+      </ToolbarButton>
+      <ToolbarButton
         active={editor.isActive('link') || editor.isActive('localLink') || linkMenu !== 'closed'}
         onClick={() => setLinkMenu(linkMenu === 'closed' ? 'menu' : 'closed')}
       >

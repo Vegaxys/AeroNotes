@@ -16,10 +16,13 @@ export const SlashCommand = Extension.create({
         pluginKey: new PluginKey('slashCommandSuggestion'),
         char: '/',
         startOfLine: false,
+        // No cap: the menu is a fixed, hand-written list, and truncating it hid
+        // its own tail (Quote and Divider) from anyone who did not already know
+        // to type a query. SlashCommandList scrolls instead.
         items: ({ query }) =>
-          getSlashCommandItems()
-            .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, 10),
+          getSlashCommandItems().filter((item) =>
+            item.title.toLowerCase().includes(query.toLowerCase())
+          ),
         command: ({ editor, range, props }) => {
           props.command({ editor, range })
         },

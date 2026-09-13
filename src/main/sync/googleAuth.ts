@@ -2,7 +2,7 @@ import { createServer } from 'http'
 import type { AddressInfo } from 'net'
 import { shell } from 'electron'
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OAUTH_SCOPES } from './oauthConfig'
-import { createPkcePair } from './pkce'
+import { createOauthState, createPkcePair } from './pkce'
 import { clearAuth, loadRefreshToken, saveAuth } from './tokenStore'
 
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -51,6 +51,7 @@ async function requestTokens(params: Record<string, string>): Promise<TokenRespo
 export function signIn(): Promise<string> {
   return new Promise((resolve, reject) => {
     const { verifier, challenge } = createPkcePair()
+    const state = createOauthState()
 
     const server = createServer()
     const timeout = setTimeout(() => {
@@ -76,6 +77,16 @@ export function signIn(): Promise<string> {
         '<html><body style="font-family:system-ui;text-align:center;padding-top:80px">' +
           '<h2>AeroNotes</h2><p>You can close this tab and return to the app.</p></body></html>'
       )
+
+      // RFC 8252 §8.9: the loopback server answers on localhost, so any other
+      // program on this machine (or a web page that guesses the port) can hit
+      // /callback with an authorization code of its own. PKCE already makes
+      // such a code useless — its verifier won't match — but the state check
+      // rejects it before we ever exchange it.
+      if (url.searchParams.get('state') !== state) {
+        finish(new Error('Sign-in state mismatch — the callback did not come from this sign-in'))
+        return
+      }
 
       const code = url.searchParams.get('code')
       if (!code) {
@@ -125,6 +136,7 @@ export function signIn(): Promise<string> {
         scope: OAUTH_SCOPES,
         code_challenge: challenge,
         code_challenge_method: 'S256',
+        state,
         // offline + consent: guarantees a refresh_token even on re-authorization.
         access_type: 'offline',
         prompt: 'consent'

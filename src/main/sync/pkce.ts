@@ -15,3 +15,8 @@ export function createPkcePair(): PkcePair {
   const challenge = base64Url(createHash('sha256').update(verifier).digest())
   return { verifier, challenge }
 }
+
+/** Opaque one-shot value tying an authorization callback to the request that started it. */
+export function createOauthState(): string {
+  return base64Url(randomBytes(24))
+}

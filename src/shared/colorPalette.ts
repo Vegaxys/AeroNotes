@@ -16,6 +16,25 @@ export const GRADIENT_PRESETS: NoteColor[] = [
   { type: 'gradient', value: ['#c4b5fd', '#67e8f9'], angle: 135 }
 ]
 
+/**
+ * Rotation walked by `notesStore.add()` when a new note picks its color.
+ * Solids and gradients are interleaved rather than concatenated: a gradient
+ * must be able to show up on the second note created, not only once every
+ * preset solid has been used.
+ */
+export const NOTE_COLOR_ROTATION: NoteColor[] = [
+  SOLID_PRESETS[0],
+  GRADIENT_PRESETS[0],
+  SOLID_PRESETS[1],
+  GRADIENT_PRESETS[1],
+  SOLID_PRESETS[2],
+  GRADIENT_PRESETS[2],
+  SOLID_PRESETS[3],
+  GRADIENT_PRESETS[3],
+  SOLID_PRESETS[4],
+  SOLID_PRESETS[5]
+]
+
 export const DEFAULT_NOTE_COLOR: NoteColor = SOLID_PRESETS[0]
 
 export function noteColorToCss(color: NoteColor): string {

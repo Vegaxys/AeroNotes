@@ -9,6 +9,7 @@ Application de sticky notes avancée pour Windows : un overlay transparent plein
 - **Dock vertical** repositionnable à gauche ou à droite, rétractable, avec recherche, bouton d'ajout et **auto-hide optionnel** (le dock se retire jusqu'à ce que le curseur touche le bord de l'écran).
 - **Tri et épinglage** : ordre manuel (glisser-déposer), par date de création, de modification ou par nom ; les notes épinglées (⭐) restent en tête. Déplacer une note à la main rebascule automatiquement en tri manuel.
 - **Corbeille** : une note supprimée reste restaurable 30 jours (menu ⋯ du dock) avant purge automatique.
+- **Multi-sélection** : Ctrl enfoncé, chaque carte devient sélectionnable ; une barre flottante en bas du dock déplace la sélection vers un autre dossier ou l'envoie à la corbeille.
 - **Barre de progression des checklists** sur la carte d'une note qui en contient une.
 - **Édition directement dans le dock** : chaque carte embarque l'éditeur complet (mode « Expand notes »), ou un aperçu compact de 3 lignes en vue repliée.
 - **Dossiers** (un niveau) : la racine liste les dossiers, chaque dossier contient ses notes ; le dernier dossier ouvert est mémorisé.
@@ -56,7 +57,8 @@ Application de sticky notes avancée pour Windows : un overlay transparent plein
 - **Renderer** (`src/renderer`) : trois points d'entrée HTML — `overlay.html` (dock), `note.html` (note détachée / éditeur de template) et `settings.html` (Paramètres) — partageant la même bibliothèque de composants React (`src/renderer/src`).
 - **Partagé** (`src/shared`) : types (`Note`, `Folder`, `Template`, `AppSettings`), canaux IPC, i18n (`i18n.ts`), palette de couleurs, templates intégrés, extraction de texte brut.
 
-Voir [HANDOFF.md](HANDOFF.md) pour l'état courant du développement et les pièges connus.
+Voir [HANDOFF.md](HANDOFF.md) pour l'état courant du développement et les pièges connus, et
+[docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) pour la revue de sécurité et ce qui reste avant une v1.
 
 ## Démarrage
 

@@ -45,6 +45,12 @@ export function getSlashCommandItems(): SlashCommandItem[] {
       editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run()
   },
   {
+    title: t('slash.heading3'),
+    icon: 'H3',
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run()
+  },
+  {
     title: t('slash.bulletList'),
     icon: '•',
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run()
