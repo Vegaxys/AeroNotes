@@ -14,6 +14,15 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Fix du 2026-10-07 : le dock annulait les drag & drop qui le traversaient (à re-tester par l'utilisateur)
+
+- **Symptôme** : un drag venu d'une autre fenêtre (fichier de l'Explorateur, texte d'un navigateur, sélection dans un post-it) qui passait sur le dock — ouvert, ou sur la languette repliée — affichait le curseur « interdit » et le drop était annulé, **même relâché loin du dock**.
+- **Cause** : en survolant une zone `data-mouse-live`, le hit-test passe l'overlay en non-click-through ; Windows fait alors de l'overlay (plein écran) la cible du drag. Pendant un drag, l'overlay reçoit des événements `drag*` et plus de `mousemove`, donc le hit-test ne tourne plus et l'overlay **reste cible sur tout l'écran** jusqu'au relâchement.
+- **Correctif** (`useClickThroughHitTest.ts`) : sur `dragenter` d'un drag qui n'a pas démarré dans l'overlay, l'overlay repasse aussitôt en click-through et s'y tient tant que le curseur reste sur le dock ; Windows rend le drag à la fenêtre du dessous dès le mouvement suivant. Les drags du dock lui-même (réordonner/détacher une carte, sélection dans l'éditeur embarqué) gardent l'overlay comme cible (suivis via `dragstart`/`dragend`).
+  - **Piège : les `mousemove` relayés en click-through n'ont aucun état de bouton** (Electron poste `WM_MOUSEMOVE` avec `wParam = 0`), donc on ne sait pas quand le drag étranger se termine. Le pass-through se lève quand le curseur quitte le dock, ou après 1 s d'immobilité dessus (sinon un drop relâché sur le dock le laisserait inerte aux clics). Si le drag continue après cette pause, il re-déclenche `dragenter` au mouvement suivant (bref flash du curseur « interdit », sans conséquence).
+  - Les cartes du dock n'acceptent plus (`preventDefault` sur `dragover`) que les drags de cartes : avant, elles avalaient n'importe quel drag pendant les quelques ms avant le passage en click-through.
+  - Conséquence assumée : on ne peut plus déposer depuis une autre app **dans** un éditeur du dock (ce n'était pas une fonctionnalité prévue).
+
 ## Lot du 2026-09-13 (à re-tester par l'utilisateur)
 
 Quatre retours de test + un audit de sécurité.

@@ -116,7 +116,11 @@ export function DockNoteList(): React.JSX.Element {
           // only reads `content` at mount, so a redocked or cloud-updated note
           // must remount to show its fresh content.
           key={`${note.id}:${note.isDetached}:${remoteRevisions[note.id] ?? 0}`}
-          onDragOver={(event) => event.preventDefault()}
+          // Only a dock card is a valid drop here: accepting any drag would
+          // swallow a foreign one (file, text) and silently cancel it.
+          onDragOver={(event) => {
+            if (draggedId) event.preventDefault()
+          }}
           onDrop={(event) => {
             event.preventDefault()
             handleDropOn(note.id)
