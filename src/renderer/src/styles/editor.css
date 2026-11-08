@@ -464,3 +464,53 @@
   background-color: rgba(249, 115, 22, 0.65);
   box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.5);
 }
+
+/* Resizable images (Image extension's `resize` option, ResizableNodeView).
+ * The node view sets an explicit px width AND height; once the note is
+ * narrower than that width, Preflight's `max-width: 100%` shrinks the width
+ * alone and the image gets squashed — hence the forced `height: auto`. */
+.note-editor [data-resize-container][data-node='image'] {
+  margin: 4px 0;
+}
+
+.note-editor [data-resize-container][data-node='image'] img {
+  max-width: 100%;
+  height: auto !important;
+  border-radius: 6px;
+}
+
+/* The handles carry no look of their own: small white squares on the
+ * corners, only while the image is hovered or being resized. */
+.note-editor [data-resize-handle] {
+  width: 10px;
+  height: 10px;
+  margin: -4px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 3px;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.12s ease-out;
+  z-index: 5;
+}
+
+.note-editor [data-resize-wrapper]:hover [data-resize-handle],
+.note-editor [data-resize-container][data-resize-state='true'] [data-resize-handle] {
+  opacity: 1;
+}
+
+.note-editor [data-resize-handle='top-left'],
+.note-editor [data-resize-handle='bottom-right'] {
+  cursor: nwse-resize;
+}
+
+.note-editor [data-resize-handle='top-right'],
+.note-editor [data-resize-handle='bottom-left'] {
+  cursor: nesw-resize;
+}
+
+/* A flex item never shrinks below its content by default, so a wide image
+ * would push past the note's edge instead of honouring max-width above. */
+.note-editor [data-resize-container][data-node='image'] [data-resize-wrapper] {
+  min-width: 0;
+  max-width: 100%;
+}

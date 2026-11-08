@@ -14,6 +14,18 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Lot du 2026-11-08 (à re-tester par l'utilisateur)
+
+Cinq retours de test.
+
+- **Les vidéos (Twitch, YouTube…) se mettaient en pause quand on utilisait le dock** : les navigateurs (Chromium, Firefox) calculent eux-mêmes si leur fenêtre est entièrement recouverte et passent alors la page en « cachée ». L'overlay couvre tout l'écran, et dès que le curseur est sur le dock il perd `WS_EX_TRANSPARENT` (fin du click-through) : pour le navigateur c'est une fenêtre opaque plein écran posée dessus. Fix : `type: 'toolbar'` sur l'overlay, qui pose `WS_EX_TOOLWINDOW` — style que `gfx::IsWindowVisibleAndFullyOpaque` (Chromium) ignore dans le calcul d'occlusion. Vérifié avec un Electron jetable : le style est bien posé et survit à `setFocusable(true)`, `setIgnoreMouseEvents` et `setAlwaysOnTop`. **Pas re-testé contre un vrai flux vidéo.**
+- **Modifier un lien au survol** : `editor/LinkHoverCard.tsx`. Le survol d'un lien web ou local (350 ms) affiche une carte : cible (cliquable), copier (nouveau canal `CLIPBOARD_WRITE_TEXT`, presse-papiers d'Electron), « Modifier » → formulaire texte + lien/chemin (« Parcourir… » pour un lien local), « Retirer le lien ». Le texte est remplacé en gardant les autres marques du 1er caractère (gras, couleur…). Les liens `[[note]]` ne sont pas concernés.
+- **Texte visible à travers la barre de formatage** : la BubbleMenu n'avait pas de z-index (la poignée de bloc, en `z-10`, passait dessus) et un fond à 95 %. Passée en `z-50` + fond opaque, et en deux rangées fixes (formatage / couleurs) : le `flex-wrap` laissait un carré de surlignage seul sur une 3e ligne. Même correction sur le menu de surlignage.
+- **Redimensionner une image** : option `resize` de l'extension Image de Tiptap (poignées aux 4 coins, ratio verrouillé, min 40 px). La taille est stockée dans les attributs `width`/`height` du nœud, donc persistée et synchronisée. Style des poignées dans `editor.css` ; `height: auto !important` est nécessaire, sinon une image plus large que la note est écrasée (le node view fixe hauteur ET largeur en px).
+- **Tooltip de la languette du dock** retiré (`title` → seulement `aria-label`) : la bulle native est une fenêtre à part qui volait un drag passant d'un écran à l'autre.
+
+Testé dans le banc d'essai de l'éditeur (carte de lien web + local, barre de formatage, redimensionnement) ; l'overlay n'a pas été relancé.
+
 ## Fix du 2026-10-07 : le dock annulait les drag & drop qui le traversaient (à re-tester par l'utilisateur)
 
 - **Symptôme** : un drag venu d'une autre fenêtre (fichier de l'Explorateur, texte d'un navigateur, sélection dans un post-it) qui passait sur le dock — ouvert, ou sur la languette repliée — affichait le curseur « interdit » et le drop était annulé, **même relâché loin du dock**.

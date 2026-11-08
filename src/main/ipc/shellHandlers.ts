@@ -5,6 +5,9 @@ export function registerShellHandlers(): void {
   // Electron's clipboard, not navigator.clipboard: the latter needs a
   // permission prompt and a focused document.
   ipcMain.handle(IPC_CHANNELS.CLIPBOARD_READ_TEXT, () => clipboard.readText())
+  ipcMain.handle(IPC_CHANNELS.CLIPBOARD_WRITE_TEXT, (_event, text: unknown) => {
+    if (typeof text === 'string') clipboard.writeText(text)
+  })
 
   ipcMain.handle(
     IPC_CHANNELS.SHELL_OPEN_PATH,

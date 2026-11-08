@@ -71,6 +71,8 @@ export const IPC_CHANNELS = {
   DISPLAYS_GET: 'displays:get',
   /** Renderer -> main: the system clipboard's plain text (quick-capture pill). */
   CLIPBOARD_READ_TEXT: 'clipboard:read-text',
+  /** Renderer -> main: put plain text on the system clipboard (link hover card's copy button). */
+  CLIPBOARD_WRITE_TEXT: 'clipboard:write-text',
   SHELL_OPEN_PATH: 'shell:open-path',
   SHELL_OPEN_EXTERNAL: 'shell:open-external',
   DIALOG_PICK_PATH: 'dialog:pick-path',

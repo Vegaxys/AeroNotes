@@ -3,6 +3,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import type { Editor } from '@tiptap/react'
 import { t } from '@shared/i18n'
 import { HIGHLIGHT_COLORS } from './highlightColors'
+import { normalizeWebUrl } from './linkUrl'
 
 interface BubbleToolbarProps {
   editor: Editor
@@ -64,8 +65,7 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element
     const url = urlDraft.trim()
     setLinkMenu('closed')
     if (!url) return
-    const normalized = /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`
-    editor.chain().focus().extendMarkRange('link').setLink({ href: normalized }).run()
+    editor.chain().focus().extendMarkRange('link').setLink({ href: normalizeWebUrl(url) }).run()
   }
 
   const removeLinks = (): void => {
@@ -81,84 +81,92 @@ export function BubbleToolbar({ editor }: BubbleToolbarProps): React.JSX.Element
       // data-mouse-live: in the overlay window the bubble can overflow the
       // dock's rect; the marker keeps it inside the click-through hit-test.
       data-mouse-live=""
-      className="relative flex max-w-[280px] flex-wrap items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl"
+      // Opaque and above everything in the editor: the bubble is appended
+      // after the document, but positioned content (the block drag handle at
+      // z-10, among others) still painted over it, and a 95% background let
+      // the text show through. Two fixed rows (formatting / colors) rather than
+      // a wrapping flex, which left a lone swatch dangling on a third line.
+      className="relative z-50 flex w-max flex-col gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900 p-1 shadow-2xl"
     >
-      <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
-        B
-      </ToolbarButton>
-      <ToolbarButton active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
-        i
-      </ToolbarButton>
-      <ToolbarButton active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>
-        S
-      </ToolbarButton>
-      <ToolbarButton active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
-        {'</>'}
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive('heading', { level: 1 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-      >
-        H1
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive('heading', { level: 2 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-      >
-        H2
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive('heading', { level: 3 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-      >
-        H3
-      </ToolbarButton>
-      <ToolbarButton
-        active={editor.isActive('link') || editor.isActive('localLink') || linkMenu !== 'closed'}
-        onClick={() => setLinkMenu(linkMenu === 'closed' ? 'menu' : 'closed')}
-      >
-        🔗
-      </ToolbarButton>
-      <span className="mx-1 h-4 w-px bg-white/15" />
-      {TEXT_COLORS.map((color) => (
+      <div className="flex items-center gap-1">
+        <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+          B
+        </ToolbarButton>
+        <ToolbarButton active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          i
+        </ToolbarButton>
+        <ToolbarButton active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>
+          S
+        </ToolbarButton>
+        <ToolbarButton active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
+          {'</>'}
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive('heading', { level: 1 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        >
+          H1
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive('heading', { level: 2 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          H2
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive('heading', { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        >
+          H3
+        </ToolbarButton>
+        <ToolbarButton
+          active={editor.isActive('link') || editor.isActive('localLink') || linkMenu !== 'closed'}
+          onClick={() => setLinkMenu(linkMenu === 'closed' ? 'menu' : 'closed')}
+        >
+          🔗
+        </ToolbarButton>
+      </div>
+      <div className="flex items-center gap-1 px-1 pb-0.5">
+        {TEXT_COLORS.map((color) => (
+          <button
+            key={color}
+            onClick={() => editor.chain().focus().setColor(color).run()}
+            className={`h-5 w-5 rounded-full border border-white/20 ${
+              activeColor === color ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
+            }`}
+            style={{ background: color }}
+            aria-label={t('editor.textColor', { color })}
+          />
+        ))}
         <button
-          key={color}
-          onClick={() => editor.chain().focus().setColor(color).run()}
-          className={`h-5 w-5 rounded-full border border-white/20 ${
-            activeColor === color ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
+          onClick={() => editor.chain().focus().unsetColor().run()}
+          className={`flex h-5 w-5 items-center justify-center rounded-full border border-white/20 text-[10px] text-white/70 ${
+            !activeColor ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
           }`}
-          style={{ background: color }}
-          aria-label={t('editor.textColor', { color })}
-        />
-      ))}
-      <button
-        onClick={() => editor.chain().focus().unsetColor().run()}
-        className={`flex h-5 w-5 items-center justify-center rounded-full border border-white/20 text-[10px] text-white/70 ${
-          !activeColor ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white' : ''
-        }`}
-        aria-label={t('editor.removeColor')}
-      >
-        ×
-      </button>
-      <span className="mx-1 h-4 w-px bg-white/15" />
-      {/* Highlight swatches: squares, vs the round text-color dots above. */}
-      {HIGHLIGHT_COLORS.map((color) => (
-        <button
-          key={color}
-          onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
-          className={`h-5 w-5 rounded border border-white/20 ${
-            editor.isActive('highlight', { color })
-              ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white'
-              : ''
-          }`}
-          style={{ background: color }}
-          aria-label={t('editor.highlight', { color })}
-        />
-      ))}
+          aria-label={t('editor.removeColor')}
+        >
+          ×
+        </button>
+        <span className="mx-1 h-4 w-px bg-white/15" />
+        {/* Highlight swatches: squares, vs the round text-color dots before them. */}
+        {HIGHLIGHT_COLORS.map((color) => (
+          <button
+            key={color}
+            onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
+            className={`h-5 w-5 rounded border border-white/20 ${
+              editor.isActive('highlight', { color })
+                ? 'ring-2 ring-offset-1 ring-offset-neutral-900 ring-white'
+                : ''
+            }`}
+            style={{ background: color }}
+            aria-label={t('editor.highlight', { color })}
+          />
+        ))}
+      </div>
       {linkMenu !== 'closed' && (
         <div
           ref={linkMenuRef}
-          className="absolute left-0 top-full z-20 mt-1 w-52 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1 shadow-2xl"
+          className="absolute left-0 top-full z-20 mt-1 w-52 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900 p-1 shadow-2xl"
         >
           {linkMenu === 'menu' ? (
             <div className="flex flex-col gap-0.5 text-xs text-white/85">

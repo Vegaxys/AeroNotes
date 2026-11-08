@@ -114,6 +114,13 @@ export function createOverlayWindow(): BrowserWindow {
     movable: false,
     fullscreenable: false,
     skipTaskbar: true,
+    // WS_EX_TOOLWINDOW on Windows. Browsers (Chromium, Firefox) compute their
+    // own occlusion and treat a window that is fully covered as hidden — which
+    // pauses Twitch / YouTube / etc. The overlay spans the whole display, and
+    // while the cursor is over the dock it drops WS_EX_TRANSPARENT, so to them
+    // it is an opaque window covering everything. Tool windows are skipped by
+    // that occlusion calculation (gfx::IsWindowVisibleAndFullyOpaque).
+    type: 'toolbar',
     alwaysOnTop: true,
     // Non-focusable (WS_EX_NOACTIVATE on Windows): the dock still receives
     // clicks, but activating it never steals foreground from a fullscreen or

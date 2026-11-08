@@ -25,8 +25,10 @@ export function DockCollapseTab(): React.JSX.Element {
         [innerEdge]: dockCollapsed ? 13 : -2,
         transition: `${innerEdge} 0.2s ease-out`
       }}
+      // No `title`: the native tooltip is a window of its own, and one popping
+      // up while a drag crosses the tab (from one screen to another) steals
+      // that drag.
       aria-label={dockCollapsed ? t('dock.expand') : t('dock.collapse')}
-      title={dockCollapsed ? t('dock.expand') : t('dock.collapse')}
     >
       {/* Plain solid pill — no icon, no border — sized like a browser
        * scrollbar thumb so it reads as a grab handle rather than a button. */}

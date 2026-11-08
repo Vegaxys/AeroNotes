@@ -43,7 +43,18 @@ export function createNoteEditorExtensions(
     }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    Image,
+    // Corner handles only, ratio locked: an image in a note is a reference to
+    // look at, never something to stretch. The size lands in the node's
+    // width/height attributes, so it persists and syncs like the rest.
+    Image.configure({
+      resize: {
+        enabled: true,
+        directions: ['bottom-left', 'bottom-right', 'top-left', 'top-right'],
+        minWidth: 40,
+        minHeight: 40,
+        alwaysPreserveAspectRatio: true
+      }
+    }),
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,

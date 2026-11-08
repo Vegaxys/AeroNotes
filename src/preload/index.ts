@@ -150,6 +150,8 @@ const api = {
     return () => ipcRenderer.removeListener(IPC_CHANNELS.SETTINGS_CHANGED, listener)
   },
   readClipboardText: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_READ_TEXT),
+  writeClipboardText: (text: string): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_WRITE_TEXT, text),
   openLocalPath: (path: string, kind: 'file' | 'folder'): Promise<string> =>
     ipcRenderer.invoke(IPC_CHANNELS.SHELL_OPEN_PATH, path, kind),
   openExternalUrl: (url: string): Promise<void> =>

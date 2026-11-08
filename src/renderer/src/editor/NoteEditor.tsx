@@ -4,6 +4,7 @@ import { EditorContent, useEditor } from '@tiptap/react'
 import { t } from '@shared/i18n'
 import { createNoteEditorExtensions } from './extensions'
 import { BubbleToolbar } from './BubbleToolbar'
+import { LinkHoverCard } from './LinkHoverCard'
 import { FindBar } from './FindBar'
 import { TableControls } from './TableControls'
 import { BlockDragHandle } from './BlockDragHandle'
@@ -148,6 +149,7 @@ export function NoteEditor({
         />
       )}
       <BubbleToolbar editor={editor} />
+      <LinkHoverCard editor={editor} containerRef={containerRef} />
       {!compact && <BlockDragHandle editor={editor} containerRef={containerRef} noteId={noteId} />}
       {!compact && <TableControls editor={editor} containerRef={containerRef} />}
       <EditorContent editor={editor} />
@@ -163,7 +165,7 @@ export function NoteEditor({
       )}
       {highlightMenu && (
         <div
-          className="highlight-color-menu absolute z-20 flex items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900/95 p-1.5 shadow-2xl"
+          className="highlight-color-menu absolute z-50 flex items-center gap-1 rounded-[var(--radius-md)] border border-white/15 bg-neutral-900 p-1.5 shadow-2xl"
           style={{ top: highlightMenu.top, left: Math.max(highlightMenu.left, 0) }}
         >
           {HIGHLIGHT_COLORS.map((color) => (
