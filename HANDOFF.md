@@ -14,6 +14,13 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Fix du 2026-11-12 : cliquer à côté d'un lien l'ouvrait (à re-tester par l'utilisateur)
+
+- **Clic à côté d'un lien** : `WebLinkClick` et `LocalLink` lisaient le lien dans les marques de la position cliquée. Un clic dans le vide à droite d'un lien (ou à gauche, en début de ligne) tombe sur le bord du lien, où ces marques le contiennent encore → le lien s'ouvrait au lieu de placer le curseur. Ils partent maintenant de l'élément DOM réellement cliqué (`a[href]` / `.local-link`).
+- **Le texte tapé juste après un lien web s'ajoutait au lien** : Tiptap rend la marque `link` inclusive dès que `autolink` est actif. Le Link est sorti de StarterKit (`link: false`) et ajouté à part avec `inclusive: false` ; `@tiptap/extension-link` devient une dépendance directe (même version 3.31.3). L'autolink marche toujours (il pose le lien une fois le mot terminé).
+
+Testé dans le banc d'essai de l'éditeur avec de vrais clics : bug reproduit avant le fix, puis clic à côté → curseur sans ouverture, clic sur le lien → ouverture, texte tapé après hors du lien, autolink OK.
+
 ## Lot du 2026-11-08 (à re-tester par l'utilisateur)
 
 Cinq retours de test.

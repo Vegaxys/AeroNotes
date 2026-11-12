@@ -12,6 +12,7 @@ import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 import { Details, DetailsSummary, DetailsContent } from '@tiptap/extension-details'
 import Highlight from '@tiptap/extension-highlight'
+import Link from '@tiptap/extension-link'
 import { t } from '@shared/i18n'
 import { SlashCommand } from './slashCommand'
 import { LocalLink } from './localLink'
@@ -30,11 +31,13 @@ export function createNoteEditorExtensions(
   options: NoteEditorExtensionOptions = {}
 ): AnyExtension[] {
   return [
-    StarterKit.configure({
-      link: {
-        openOnClick: false,
-        autolink: true
-      }
+    StarterKit.configure({ link: false }),
+    // Tiptap makes the link mark inclusive whenever autolink is on, so text
+    // typed right after a link joined it. Autolink doesn't need that: it marks
+    // a URL once the word is finished.
+    Link.extend({ inclusive: false }).configure({
+      openOnClick: false,
+      autolink: true
     }),
     TextStyle,
     Color,

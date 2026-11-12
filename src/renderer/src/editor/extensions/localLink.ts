@@ -69,8 +69,16 @@ export const LocalLink = Mark.create({
       new Plugin({
         key: new PluginKey('localLinkClick'),
         props: {
-          handleClick: (view, pos) => {
-            const mark = view.state.doc.resolve(pos).marks().find((m) => m.type.name === 'localLink')
+          handleClick: (view, _pos, event) => {
+            // Only a click on the link itself opens it: a click in the space
+            // beside it resolves to its edge, whose marks can include the link.
+            const target = event.target instanceof Element ? event.target : null
+            const element = target?.closest('.local-link')
+            if (!element || !view.dom.contains(element)) return false
+            const $pos = view.state.doc.resolve(view.posAtDOM(element, 0))
+            const mark = $pos.parent
+              .childAfter($pos.parentOffset)
+              .node?.marks.find((m) => m.type.name === 'localLink')
             if (!mark) return false
             const { path, kind } = mark.attrs as LocalLinkAttributes
             void window.aeronotes.openLocalPath(path, kind)
