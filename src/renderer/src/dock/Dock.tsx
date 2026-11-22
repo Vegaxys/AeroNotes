@@ -1,4 +1,6 @@
 import { useDockAutoHide } from '@renderer/overlay/hooks/useDockAutoHide'
+import { SyncLockNotice } from '@renderer/shared/SyncLockNotice'
+import { useEditingLocked } from '@renderer/state/useEditingLocked'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { DockCollapseTab } from './DockCollapseTab'
@@ -18,6 +20,7 @@ export function Dock(): React.JSX.Element {
   const currentFolderId = useNotesStore((s) => s.currentFolderId)
   const trashView = useNotesStore((s) => s.trashView)
   const autoHidden = useDockAutoHide()
+  const editingLocked = useEditingLocked()
 
   // Auto-hidden: no strip at all (taskbar behaviour), and nothing interactive
   // either — the edge that reveals it is watched globally, not by this element.
@@ -56,7 +59,9 @@ export function Dock(): React.JSX.Element {
         }}
       />
       {!dockCollapsed && !autoHidden && (
-        <>
+        // display: contents keeps the flex layout; inert blocks every edit
+        // path at once (editors, titles, menus, drags) during the startup sync.
+        <div className="contents" inert={editingLocked}>
           <DockHeader />
           {trashView ? (
             <DockTrashList />
@@ -70,7 +75,10 @@ export function Dock(): React.JSX.Element {
           ) : (
             <DockFolderList />
           )}
-        </>
+        </div>
+      )}
+      {editingLocked && !dockCollapsed && !autoHidden && (
+        <SyncLockNotice className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap" />
       )}
       {!autoHidden && <DockCollapseTab />}
     </div>

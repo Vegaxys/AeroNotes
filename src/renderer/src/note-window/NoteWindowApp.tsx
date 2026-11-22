@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNotesStore } from '@renderer/state/useNotesStore'
+import { useEditingLocked } from '@renderer/state/useEditingLocked'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
+import { SyncLockNotice } from '@renderer/shared/SyncLockNotice'
 import { NoteFrame } from '@renderer/shared/NoteFrame'
 import { NoteEditor } from '@renderer/editor/NoteEditor'
 import { TemplateEditorApp } from './TemplateEditorApp'
@@ -32,6 +34,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
   const locale = useSettingsStore((s) => s.locale)
   const remoteRevisions = useNotesStore((s) => s.remoteRevisions)
   const [bodyFocusRequest, setBodyFocusRequest] = useState(0)
+  const editingLocked = useEditingLocked()
 
   if (templateId) {
     return <TemplateEditorApp key={locale} templateId={templateId} />
@@ -41,34 +44,42 @@ export function NoteWindowApp(): React.JSX.Element | null {
     return null
   }
 
+  // Quick capture always writes a brand-new note: no remote copy can be newer.
+  const locked = editingLocked && !isQuickCapture()
+
   return (
-    <NoteFrame
-      key={locale}
-      note={note}
-      title={note.title}
-      color={note.color}
-      isPinned={Boolean(note.alwaysOnTop)}
-      onTogglePin={() => setNoteAlwaysOnTop(note.id, !note.alwaysOnTop)}
-      onRedock={() => redockNote(note.id)}
-      onDelete={() => deleteNote(note.id)}
-      onColorChange={(color) => setNoteColor(note.id, color)}
-      onTitleChange={(title) => setNoteTitle(note.id, title)}
-      onTitleSubmit={() => setBodyFocusRequest((n) => n + 1)}
-    >
-      <NoteEditor
-        // Remote revision in the key: reload the editor when this note was
-        // changed from the cloud while its window is open.
-        key={remoteRevisions[note.id] ?? 0}
-        noteId={note.id}
-        content={note.content}
-        onChange={(content) => updateNoteContent(note.id, content)}
-        showTemplates
-        // A window that opens on an empty note was just created from the dock's
-        // + button (or quick capture): start typing right away.
-        autofocus={!note.contentPreview}
-        focusRequest={bodyFocusRequest}
-        quickCapture={isQuickCapture()}
-      />
-    </NoteFrame>
+    <div className="contents" inert={locked}>
+      <NoteFrame
+        key={locale}
+        note={note}
+        title={note.title}
+        color={note.color}
+        isPinned={Boolean(note.alwaysOnTop)}
+        onTogglePin={() => setNoteAlwaysOnTop(note.id, !note.alwaysOnTop)}
+        onRedock={() => redockNote(note.id)}
+        onDelete={() => deleteNote(note.id)}
+        onColorChange={(color) => setNoteColor(note.id, color)}
+        onTitleChange={(title) => setNoteTitle(note.id, title)}
+        onTitleSubmit={() => setBodyFocusRequest((n) => n + 1)}
+      >
+        <NoteEditor
+          // Remote revision in the key: reload the editor when this note was
+          // changed from the cloud while its window is open.
+          key={remoteRevisions[note.id] ?? 0}
+          noteId={note.id}
+          content={note.content}
+          onChange={(content) => updateNoteContent(note.id, content)}
+          showTemplates
+          // A window that opens on an empty note was just created from the dock's
+          // + button (or quick capture): start typing right away.
+          autofocus={!note.contentPreview}
+          focusRequest={bodyFocusRequest}
+          quickCapture={isQuickCapture()}
+        />
+      </NoteFrame>
+      {locked && (
+        <SyncLockNotice className="fixed bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap" />
+      )}
+    </div>
   )
 }

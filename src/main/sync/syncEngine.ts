@@ -1,6 +1,6 @@
 import { join, extname } from 'path'
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises'
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, powerMonitor } from 'electron'
 import type {
   Folder,
   SyncDocument,
@@ -22,7 +22,11 @@ import { canStoreTokens, loadEmail } from './tokenStore'
 const SYNC_FILE_NAME = 'aeronotes-sync.json'
 const MUTATION_DEBOUNCE_MS = 20_000
 const PERIODIC_SYNC_MS = 5 * 60_000
-const STARTUP_SYNC_DELAY_MS = 3_000
+/**
+ * Longest wait before notes become editable anyway: a hung request must not
+ * lock the user out. An offline machine fails fast and unlocks sooner.
+ */
+const EDIT_LOCK_TIMEOUT_MS = 10_000
 /** Tombstones older than this are pruned — any machine offline longer re-uploads at worst. */
 const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
@@ -40,6 +44,9 @@ let status: SyncStatus = { state: 'unconfigured' }
 let isSyncing = false
 let queuedWhileSyncing = false
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let editLockTimer: ReturnType<typeof setTimeout> | null = null
+/** When the current edit lock was taken: only a sync started after it may release it. */
+let editLockedAt = 0
 
 function setStatus(patch: Partial<SyncStatus>): void {
   status = { ...status, ...patch }
@@ -195,6 +202,7 @@ export async function syncNow(): Promise<void> {
     return
   }
   isSyncing = true
+  const startedAt = Date.now()
   setStatus({ state: 'syncing', error: undefined })
 
   try {
@@ -250,9 +258,14 @@ export async function syncNow(): Promise<void> {
     setStatus({ state: 'error', error: error instanceof Error ? error.message : String(error) })
   } finally {
     isSyncing = false
+    // A pass that began before the lock may have read the cloud before the
+    // other machine's changes: it releases nothing, the queued pass will.
+    if (startedAt >= editLockedAt) unlockEditing()
     if (queuedWhileSyncing) {
       queuedWhileSyncing = false
-      scheduleDebouncedSync()
+      // Someone is waiting to edit: no debounce for the pass that unlocks them.
+      if (status.editingLocked) void syncNow()
+      else scheduleDebouncedSync()
     }
   }
 }
@@ -265,8 +278,31 @@ function scheduleDebouncedSync(): void {
   }, MUTATION_DEBOUNCE_MS)
 }
 
+function unlockEditing(): void {
+  if (editLockTimer) clearTimeout(editLockTimer)
+  editLockTimer = null
+  if (status.editingLocked) setStatus({ editingLocked: false })
+}
+
+/**
+ * Makes notes read-only and syncs right away; the lock lifts when that sync
+ * ends (success or failure) or after {@link EDIT_LOCK_TIMEOUT_MS}. Called
+ * whenever this machine may have missed remote changes: launch, wake.
+ */
+function lockEditingUntilSynced(): void {
+  if (!isSyncConfigured() || !isSignedIn()) return
+  editLockedAt = Date.now()
+  if (editLockTimer) clearTimeout(editLockTimer)
+  editLockTimer = setTimeout(unlockEditing, EDIT_LOCK_TIMEOUT_MS)
+  setStatus({ editingLocked: true })
+  if (isSyncing) queuedWhileSyncing = true
+  else void syncNow()
+}
+
 /** Recomputes the resting status after sign-in/out. */
 export function refreshAuthStatus(): void {
+  // Signed out (or never configured): there is nothing to wait for.
+  if (!isSyncConfigured() || !isSignedIn()) unlockEditing()
   if (!isSyncConfigured()) {
     setStatus({ state: 'unconfigured', email: undefined })
   } else if (!canStoreTokens()) {
@@ -285,9 +321,10 @@ export function initSync(): void {
   )
   notesStore.setOnMutated(scheduleDebouncedSync)
   setInterval(() => void syncNow(), PERIODIC_SYNC_MS)
-  if (isSyncConfigured() && isSignedIn()) {
-    setTimeout(() => void syncNow(), STARTUP_SYNC_DELAY_MS)
-  }
+  lockEditingUntilSynced()
+  // The app lives in the tray for days: waking the PC is the "launch" that
+  // matters, other machines may have edited notes meanwhile.
+  powerMonitor.on('resume', lockEditingUntilSynced)
   // Best effort on quit: flush the local store; the cloud catches up next launch.
   app.on('before-quit', () => {
     if (debounceTimer) clearTimeout(debounceTimer)

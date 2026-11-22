@@ -91,6 +91,12 @@ export interface SyncStatus {
   email?: string
   lastSyncAt?: number
   error?: string
+  /**
+   * Notes are read-only until a sync started after launch (or wake from sleep)
+   * has finished. Editing a stale copy first would bump its `updatedAt` and
+   * let it win the merge over newer changes made on another machine.
+   */
+  editingLocked?: boolean
 }
 
 /** A block being dragged from one note toward another (cross-window transfer). */
