@@ -72,6 +72,14 @@ body,
     border: 1px solid var(--color-m-border);
     background: var(--color-m-glass);
     color: var(--color-m-text);
+    transition:
+      transform 380ms var(--spring),
+      background-color 200ms var(--ease-out);
+  }
+
+  .glass-button:active {
+    transform: scale(0.88);
+    transition-duration: 90ms;
   }
 }
 
@@ -86,9 +94,150 @@ body,
   min-height: 50vh;
 }
 
+/* ---- Motion (HyperOS-like: quick, springy, never instant) ---- */
+
+:root {
+  /* Overshoots a little then settles: the "rebound" of HyperOS controls. */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@layer components {
+  /* Any tappable surface: sinks under the finger, springs back on release. */
+  .press {
+    transition:
+      transform 380ms var(--spring),
+      background-color 200ms var(--ease-out),
+      color 200ms var(--ease-out),
+      opacity 200ms var(--ease-out);
+  }
+
+  .press:active {
+    transform: scale(0.88);
+    transition-duration: 90ms;
+  }
+
+  /* Large surfaces (cards, list rows) sink less than buttons. */
+  .press-soft {
+    transition: transform 420ms var(--spring);
+  }
+
+  .press-soft:active {
+    transform: scale(0.97);
+    transition-duration: 120ms;
+  }
+
+  /* Toolbar tool: its active pill grows out of the centre instead of popping in. */
+  .tool-button {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .tool-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      transform 420ms var(--spring),
+      opacity 160ms var(--ease-out);
+  }
+
+  .tool-button[aria-pressed='true']::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* The toolbar's tool set changes with the selection: the new set rises in. */
+@keyframes tools-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.anim-fade-in {
+  animation: fade-in 200ms var(--ease-out);
+}
+
+.anim-sheet-in {
+  animation: sheet-in 320ms var(--ease-out);
+}
+
+.anim-tools-in {
+  animation: tools-in 360ms var(--spring);
+}
+
+.anim-palette-in {
+  animation: palette-in 300ms var(--spring);
+}
+
+/* ---- Note body ---- */
+
+.mobile-note ul[data-type='taskList'] li {
+  gap: 10px;
+}
+
+.mobile-note ul[data-type='taskList'] li > label {
+  display: flex;
+  margin-top: 2px;
+}
+
+/* Checklist boxes: rounded squares in the note's ink, ticking with a bounce. */
 .mobile-note ul[data-type='taskList'] li > label input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 2px solid var(--color-m-ink);
+  border-radius: 7px;
+  background: transparent center / 15px no-repeat;
+  transition:
+    background-color 180ms var(--ease-out),
+    transform 380ms var(--spring);
+}
+
+.mobile-note ul[data-type='taskList'] li > label input[type='checkbox']:checked {
+  background-color: var(--color-m-ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4.5 12.5L9.5 17.5L19.5 6.5' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.mobile-note ul[data-type='taskList'] li > label input[type='checkbox']:active {
+  transform: scale(0.8);
+  transition-duration: 90ms;
+}
+
+/* Titles as heavy as the desktop's Segoe UI Bold: the phone's system sans
+ * looks lighter at the same 700 weight. */
+.mobile-note h1,
+.mobile-note h2,
+.mobile-note h3 {
+  font-weight: 800;
 }
 
 /* Card → note zoom (View Transitions API, see app/viewTransition.ts). */
@@ -105,7 +254,17 @@ body,
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
-  ::view-transition-new(*) {
+  ::view-transition-new(*),
+  .anim-fade-in,
+  .anim-sheet-in,
+  .anim-tools-in,
+  .anim-palette-in {
     animation: none;
+  }
+
+  .press,
+  .press-soft,
+  .tool-button::before {
+    transition: none;
   }
 }

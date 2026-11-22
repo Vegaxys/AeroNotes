@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon layer (Android 13+): the post-it silhouette, tinted by the launcher. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38.3,31.1H69.5A7.2,7.2 0,0 1,76.7,38.3V61.2L59.7,76.7H38.3A7.2,7.2 0,0 1,31.1,69.5V38.3A7.2,7.2 0,0 1,38.3,31.1Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.55"
+        android:pathData="M76.7,61.2C70.2,61.4 59.6,64.4 59.2,70.4L59.2,76.7L59.7,76.7Z" />
+</vector>

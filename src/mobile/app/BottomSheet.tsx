@@ -9,8 +9,8 @@ interface BottomSheetProps {
 export function BottomSheet({ onClose, children, label }: BottomSheetProps): React.JSX.Element {
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={label}>
-      <button type="button" aria-label={label} className="absolute inset-0 bg-black/55" onClick={onClose} />
-      <div className="safe-bottom relative max-h-[85%] overflow-y-auto rounded-t-[28px] bg-m-surface px-4 pt-2.5 pb-4">
+      <button type="button" aria-label={label} className="anim-fade-in absolute inset-0 bg-black/55" onClick={onClose} />
+      <div className="anim-sheet-in safe-bottom relative max-h-[85%] overflow-y-auto rounded-t-[28px] bg-m-surface px-4 pt-2.5 pb-4">
         <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-m-muted/60" />
         {children}
       </div>
@@ -32,7 +32,7 @@ export function SheetRow({ icon, label, value, danger, onPress }: SheetRowProps)
     <button
       type="button"
       onClick={onPress}
-      className={`flex h-[52px] w-full items-center gap-4 rounded-2xl px-2 text-left text-base active:bg-white/5 ${
+      className={`press flex h-[52px] w-full items-center gap-4 rounded-2xl px-2 text-left text-base active:bg-white/5 ${
         danger ? 'text-m-danger' : 'text-m-text'
       }`}
     >

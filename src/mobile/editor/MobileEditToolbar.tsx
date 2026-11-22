@@ -49,8 +49,8 @@ function ToolButton({ label, active, disabled, danger, onPress, children, classN
       onPointerDown={keepEditorFocus}
       onMouseDown={keepEditorFocus}
       onClick={onPress}
-      className={`flex h-11 min-w-11 shrink-0 items-center justify-center rounded-xl px-2 text-[17px] disabled:opacity-35 ${
-        active ? 'bg-accent/20 text-accent' : danger ? 'text-m-danger' : 'text-m-text'
+      className={`tool-button press flex h-11 min-w-11 shrink-0 items-center justify-center rounded-xl px-2 text-[17px] disabled:opacity-35 ${
+        active ? 'text-accent' : danger ? 'text-m-danger' : 'text-m-text'
       } ${className}`}
     >
       {children}
@@ -119,6 +119,7 @@ export function MobileEditToolbar({ editor, onHideKeyboard }: MobileEditToolbarP
 
   const togglePalette = (which: Exclude<Palette, null>): void => setPalette((p) => (p === which ? null : which))
 
+  const mode = state.inTable ? 'table' : state.hasSelection ? 'selection' : 'caret'
   let tools: React.ReactNode
   if (state.inTable) {
     tools = (
@@ -171,7 +172,7 @@ export function MobileEditToolbar({ editor, onHideKeyboard }: MobileEditToolbarP
   return (
     <div className="border-t border-white/10 bg-m-raised">
       {palette && state.hasSelection && (
-        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-2">
+        <div className="anim-palette-in flex items-center gap-3 border-b border-white/10 px-4 py-2">
           {swatches.map((color) => (
             <button
               key={color}
@@ -183,7 +184,7 @@ export function MobileEditToolbar({ editor, onHideKeyboard }: MobileEditToolbarP
                 if (palette === 'text') chain().setColor(color).run()
                 else chain().toggleHighlight({ color }).run()
               }}
-              className={`h-8 w-8 border border-white/20 ${palette === 'text' ? 'rounded-full' : 'rounded-md'}`}
+              className={`press h-8 w-8 border border-white/20 ${palette === 'text' ? 'rounded-full' : 'rounded-md'}`}
               style={{ background: color }}
             />
           ))}
@@ -199,7 +200,10 @@ export function MobileEditToolbar({ editor, onHideKeyboard }: MobileEditToolbarP
         </div>
       )}
       <div className="flex h-14 items-center px-1.5">
-        <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none]">{tools}</div>
+        {/* Keyed by mode: a new tool set replays the rise-in animation. */}
+        <div key={mode} className="anim-tools-in flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none]">
+          {tools}
+        </div>
         <ToolButton label={t('mobile.hideKeyboard')} onPress={onHideKeyboard} className="text-white/60"><IconKeyboard /></ToolButton>
       </div>
     </div>

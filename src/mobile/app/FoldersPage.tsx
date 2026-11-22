@@ -49,7 +49,7 @@ export function FoldersPage({ onFolderChosen, onOpenTrash }: FoldersPageProps): 
     <div className="no-scrollbar flex h-full flex-col overflow-y-auto px-4 pt-2 pb-36">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[26px] font-bold">{t('mobile.folders')}</h1>
+          <h1 className="text-[26px] font-extrabold">{t('mobile.folders')}</h1>
           <p className="text-[13px] text-m-muted">
             {t(notes.length === 1 ? 'folder.noteCount.one' : 'folder.noteCount.many', { count: notes.length })}
           </p>
@@ -58,7 +58,7 @@ export function FoldersPage({ onFolderChosen, onOpenTrash }: FoldersPageProps): 
           type="button"
           aria-label={t('dock.addFolder')}
           onClick={() => void createFolder()}
-          className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-m-surface"
+          className="press flex h-11 w-11 items-center justify-center rounded-[14px] bg-m-surface"
         >
           <IconPlus width={22} height={22} />
         </button>
@@ -87,7 +87,7 @@ export function FoldersPage({ onFolderChosen, onOpenTrash }: FoldersPageProps): 
                 enterFolder(folder.id)
                 onFolderChosen()
               }}
-              className={`flex h-[60px] items-center gap-3.5 rounded-[18px] pr-3 pl-4 text-left ${
+              className={`press-soft flex h-[60px] items-center gap-3.5 rounded-[18px] pr-3 pl-4 text-left ${
                 active ? 'bg-accent/20 text-accent' : 'bg-m-surface text-m-text'
               }`}
             >

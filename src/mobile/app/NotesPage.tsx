@@ -50,7 +50,7 @@ export function NotesPage({ onOpenNote, onNoteActions, onShowFolders }: NotesPag
       <div className="flex items-center justify-between px-4 pt-2">
         <button type="button" onClick={onShowFolders} className="min-w-0 text-left">
           <span className="flex items-center gap-1">
-            <span className="truncate text-[26px] font-bold">{folder.name}</span>
+            <span className="truncate text-[26px] font-extrabold">{folder.name}</span>
             <IconChevronDown width={20} height={20} className="shrink-0 text-m-muted" />
           </span>
           <span className="text-[13px] text-m-muted">
@@ -61,7 +61,7 @@ export function NotesPage({ onOpenNote, onNoteActions, onShowFolders }: NotesPag
           type="button"
           aria-label={t('dock.sort')}
           onClick={() => setSortOpen(true)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-m-surface text-m-muted"
+          className="press flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-m-surface text-m-muted"
         >
           <IconSliders width={22} height={22} />
         </button>

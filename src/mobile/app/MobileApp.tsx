@@ -16,6 +16,25 @@ import { zoomNote } from './viewTransition'
 
 const PAGES: Page[] = ['folders', 'notes', 'settings']
 
+/** Page change from a button: short and decelerating, like a fling (native smooth scroll takes ~0.5 s). */
+const PAGE_SLIDE_MS = 260
+const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
+
+function slidePager(pager: HTMLElement, targetLeft: number): void {
+  const start = pager.scrollLeft
+  if (start === targetLeft) return
+  const startedAt = performance.now()
+  // Snapping would pull each intermediate frame back to a page edge.
+  pager.style.scrollSnapType = 'none'
+  const step = (now: number): void => {
+    const progress = Math.min(1, (now - startedAt) / PAGE_SLIDE_MS)
+    pager.scrollLeft = start + (targetLeft - start) * easeOutCubic(progress)
+    if (progress < 1) requestAnimationFrame(step)
+    else pager.style.scrollSnapType = ''
+  }
+  requestAnimationFrame(step)
+}
+
 /** Keyed on the language: t() is resolved at render time, a remount repaints every label. */
 export function MobileApp(): React.JSX.Element {
   const locale = useSettingsStore((s) => s.locale)
@@ -54,8 +73,7 @@ function AppShell(): React.JSX.Element {
 
   const goToPage = useCallback((target: Page) => {
     const pager = pagerRef.current
-    if (!pager) return
-    pager.scrollTo({ left: PAGES.indexOf(target) * pager.clientWidth, behavior: 'smooth' })
+    if (pager) slidePager(pager, PAGES.indexOf(target) * pager.clientWidth)
   }, [])
 
   useLayoutEffect(() => {

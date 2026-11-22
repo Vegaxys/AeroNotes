@@ -19,7 +19,7 @@ export function TrashScreen({ onClose }: { onClose: () => void }): React.JSX.Ele
         <button type="button" aria-label={t('mobile.back')} className="glass-button" onClick={onClose}>
           <IconArrowLeft />
         </button>
-        <h1 className="flex-1 text-[22px] font-bold">{t('trash.title')}</h1>
+        <h1 className="flex-1 text-[22px] font-extrabold">{t('trash.title')}</h1>
         {trash.length > 0 && (
           <button
             type="button"

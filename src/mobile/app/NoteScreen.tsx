@@ -160,7 +160,7 @@ export function NoteScreen({ note, editing, onEditingChange, onClose, onActions 
             onKeyDown={(event) => {
               if (event.key === 'Enter') editor?.commands.focus('start')
             }}
-            className="mb-1 w-full bg-transparent text-[28px] leading-tight font-bold outline-none placeholder:text-m-ink/40"
+            className="mb-1 w-full bg-transparent text-[28px] leading-tight font-extrabold outline-none placeholder:text-m-ink/40"
           />
           {editor && <EditorContent editor={editor} />}
           {editable && isEmpty && editor && (

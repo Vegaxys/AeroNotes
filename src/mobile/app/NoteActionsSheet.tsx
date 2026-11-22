@@ -48,14 +48,15 @@ export function NoteActionsSheet({ note, onClose, onTrashed }: NoteActionsSheetP
       ) : (
         <>
           <p className="px-2 pb-2.5 text-[13px] font-medium text-m-muted">{t('mobile.color')}</p>
-          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-2 pb-4">
+          {/* Vertical padding: the scroller clips, and the active ring sits 5 px outside the dot. */}
+          <div className="no-scrollbar mb-2 flex items-center gap-2 overflow-x-auto px-3 py-2">
             {[...SOLID_PRESETS, ...GRADIENT_PRESETS].map((color, index) => (
               <button
                 key={index}
                 type="button"
                 aria-label={t('color.preset', { index: index + 1 })}
                 onClick={() => window.aeronotes.setNoteColor(note.id, color)}
-                className={`h-8 w-8 shrink-0 rounded-full ${
+                className={`press h-8 w-8 shrink-0 rounded-full ${
                   isSameNoteColor(color, note.color) ? 'ring-[3px] ring-m-text ring-offset-2 ring-offset-m-surface' : ''
                 }`}
                 style={{ background: noteColorToCss(color) }}

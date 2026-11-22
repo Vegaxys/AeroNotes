@@ -50,7 +50,7 @@ export function SettingsPage(): React.JSX.Element {
   return (
     <div className="no-scrollbar flex h-full flex-col gap-2.5 overflow-y-auto px-4 pt-2 pb-36">
       <div className="mb-2">
-        <h1 className="text-[26px] font-bold">{t('settings.title')}</h1>
+        <h1 className="text-[26px] font-extrabold">{t('settings.title')}</h1>
         {version && <p className="text-[13px] text-m-muted">AeroNotes {version}</p>}
       </div>
 

@@ -77,11 +77,11 @@ export function NoteCard({ note, onOpen, onLongPress }: NoteCardProps): React.JS
         if (!longPressed.current) onOpen()
       }}
       // wrap-anywhere: a long URL has no space to break at and would overflow the column.
-      className="flex w-full flex-col gap-2 rounded-[20px] px-3.5 pt-3.5 pb-3 text-left text-m-ink wrap-anywhere"
+      className="press-soft flex w-full flex-col gap-2 rounded-[20px] px-3.5 pt-3.5 pb-3 text-left text-m-ink wrap-anywhere"
       style={{ background: noteColorToCss(note.color) }}
     >
       <span className="flex w-full items-start gap-1.5">
-        <span className="line-clamp-3 flex-1 text-base leading-[21px] font-bold">{note.title || t('note.untitled')}</span>
+        <span className="line-clamp-3 flex-1 text-base leading-[21px] font-extrabold">{note.title || t('note.untitled')}</span>
         {note.pinned && <IconStar width={16} height={16} className="mt-0.5 shrink-0" />}
       </span>
       {note.contentPreview && (

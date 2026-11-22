@@ -22,7 +22,7 @@ export function BottomBar({ page, onPage, onNewNote }: BottomBarProps): React.JS
       aria-label={label}
       aria-current={page === target ? 'page' : undefined}
       onClick={() => onPage(page === target ? 'notes' : target)}
-      className={`flex h-12 w-12 items-center justify-center rounded-full ${
+      className={`press flex h-12 w-12 items-center justify-center rounded-full ${
         page === target ? 'bg-accent/20 text-accent' : 'text-m-muted'
       }`}
     >
@@ -39,7 +39,7 @@ export function BottomBar({ page, onPage, onNewNote }: BottomBarProps): React.JS
             type="button"
             aria-label={t('dock.addNote')}
             onClick={onNewNote}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-m-ink"
+            className="press flex h-14 w-14 items-center justify-center rounded-full bg-accent text-m-ink"
           >
             <IconPlus width={28} height={28} />
           </button>
