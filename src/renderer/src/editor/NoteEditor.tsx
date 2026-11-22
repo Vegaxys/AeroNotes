@@ -28,6 +28,11 @@ interface NoteEditorProps {
   showTemplates?: boolean
   /** Put the caret in the note as soon as it mounts (freshly created note). */
   autofocus?: boolean
+  /**
+   * Bump it to put the caret at the start of the note (Enter in the title).
+   * The value the editor mounts with is ignored, so a remount never steals focus.
+   */
+  focusRequest?: number
   /** Quick-capture window: the template pills gain a "Clipboard" entry. */
   quickCapture?: boolean
 }
@@ -42,9 +47,11 @@ export function NoteEditor({
   compact,
   showTemplates,
   autofocus,
+  focusRequest,
   quickCapture
 }: NoteEditorProps): React.JSX.Element | null {
   const containerRef = useRef<HTMLDivElement>(null)
+  const handledFocusRequest = useRef(focusRequest)
   const [highlightMenu, setHighlightMenu] = useState<{ top: number; left: number } | null>(null)
   const [isEmpty, setIsEmpty] = useState(false)
   // Ctrl+F. The token re-focuses the input when the bar is already open.
@@ -81,6 +88,12 @@ export function NoteEditor({
       onChange?.(editor.getJSON())
     }
   })
+
+  useEffect(() => {
+    if (!editor || focusRequest === handledFocusRequest.current) return
+    handledFocusRequest.current = focusRequest
+    editor.commands.focus('start')
+  }, [editor, focusRequest])
 
   const openFind = (): void =>
     setFind((current) => ({ focusToken: (current?.focusToken ?? 0) + 1 }))

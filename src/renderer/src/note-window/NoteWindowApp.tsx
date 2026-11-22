@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { NoteFrame } from '@renderer/shared/NoteFrame'
@@ -30,6 +31,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
   // Keyed remount on language change (labels are resolved at render time).
   const locale = useSettingsStore((s) => s.locale)
   const remoteRevisions = useNotesStore((s) => s.remoteRevisions)
+  const [bodyFocusRequest, setBodyFocusRequest] = useState(0)
 
   if (templateId) {
     return <TemplateEditorApp key={locale} templateId={templateId} />
@@ -51,6 +53,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
       onDelete={() => deleteNote(note.id)}
       onColorChange={(color) => setNoteColor(note.id, color)}
       onTitleChange={(title) => setNoteTitle(note.id, title)}
+      onTitleSubmit={() => setBodyFocusRequest((n) => n + 1)}
     >
       <NoteEditor
         // Remote revision in the key: reload the editor when this note was
@@ -63,6 +66,7 @@ export function NoteWindowApp(): React.JSX.Element | null {
         // A window that opens on an empty note was just created from the dock's
         // + button (or quick capture): start typing right away.
         autofocus={!note.contentPreview}
+        focusRequest={bodyFocusRequest}
         quickCapture={isQuickCapture()}
       />
     </NoteFrame>

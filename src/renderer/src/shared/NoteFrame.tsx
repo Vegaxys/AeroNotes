@@ -9,6 +9,11 @@ import { NoteHeaderMenu, type NoteHeaderMenuState } from './NoteHeaderMenu'
 const dragRegion = { WebkitAppRegion: 'drag' } as unknown as CSSProperties
 const noDragRegion = { WebkitAppRegion: 'no-drag' } as unknown as CSSProperties
 
+/** Fades out whatever reaches the right edge of the title slot (only a title too long to fit). */
+const titleFade: CSSProperties = {
+  maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)'
+}
+
 interface NoteFrameProps {
   title: string
   color: NoteColor
@@ -18,6 +23,8 @@ interface NoteFrameProps {
   onDelete: () => void
   onColorChange: (color: NoteColor) => void
   onTitleChange: (title: string) => void
+  /** Enter pressed in the title: the host puts the caret in the note body. */
+  onTitleSubmit?: () => void
   /** When provided, right-clicking the titlebar opens the shared note context menu. */
   note?: Note
   children: React.ReactNode
@@ -28,12 +35,15 @@ function EditableTitle({
   isEditing,
   onStartEdit,
   onStopEdit,
+  onSubmit,
   onTitleChange
 }: {
   title: string
   isEditing: boolean
   onStartEdit: () => void
   onStopEdit: () => void
+  /** Enter was pressed: the title is done, the caret should move on to the body. */
+  onSubmit: () => void
   onTitleChange: (title: string) => void
 }): React.JSX.Element {
   if (isEditing) {
@@ -44,13 +54,19 @@ function EditableTitle({
         onChange={(e) => onTitleChange(e.target.value)}
         onBlur={onStopEdit}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
+          if (e.nativeEvent.isComposing) return // Enter confirms an IME composition, not the title
+          if (e.key === 'Escape') e.currentTarget.blur()
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.blur()
+            onSubmit()
+          }
         }}
         placeholder={t('note.untitled')}
         spellCheck={false}
         size={Math.max(title.length, 6)}
         style={noDragRegion}
-        className="max-w-full truncate bg-transparent text-sm font-semibold text-black/80 outline-none placeholder:text-black/40"
+        className="max-w-full bg-transparent text-sm font-semibold text-black/80 outline-none placeholder:text-black/40"
       />
     )
   }
@@ -62,7 +78,7 @@ function EditableTitle({
     <span
       onClick={onStartEdit}
       style={noDragRegion}
-      className="max-w-full cursor-text truncate text-sm font-semibold text-black/80"
+      className="cursor-text text-sm font-semibold text-black/80"
     >
       {title || t('note.untitled')}
     </span>
@@ -78,6 +94,7 @@ export function NoteFrame({
   onDelete,
   onColorChange,
   onTitleChange,
+  onTitleSubmit,
   note,
   children
 }: NoteFrameProps): React.JSX.Element {
@@ -103,14 +120,23 @@ export function NoteFrame({
         className="flex shrink-0 items-center gap-2 border-b border-black/10 px-3 py-2"
         style={dragRegion}
       >
-        <EditableTitle
-          title={title}
-          isEditing={isEditingTitle}
-          onStartEdit={() => setIsEditingTitle(true)}
-          onStopEdit={() => setIsEditingTitle(false)}
-          onTitleChange={onTitleChange}
-        />
-        <div className="ml-auto flex shrink-0 items-center gap-1" style={noDragRegion}>
+        {/* Takes the free width and clips a long title there, fading it out just
+            before the buttons so they never move. Not a no-drag zone itself: the
+            space right of a short title still drags the window. */}
+        <div
+          className="min-w-0 flex-1 overflow-hidden whitespace-nowrap"
+          style={titleFade}
+        >
+          <EditableTitle
+            title={title}
+            isEditing={isEditingTitle}
+            onStartEdit={() => setIsEditingTitle(true)}
+            onStopEdit={() => setIsEditingTitle(false)}
+            onSubmit={() => onTitleSubmit?.()}
+            onTitleChange={onTitleChange}
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-1" style={noDragRegion}>
           <ColorPicker value={color} onChange={onColorChange} />
           <button
             onClick={onTogglePin}
