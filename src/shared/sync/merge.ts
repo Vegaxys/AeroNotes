@@ -1,4 +1,4 @@
-import type { Folder, SyncDocument, SyncedNote, SyncTombstones, Template } from './types'
+import type { Folder, SyncDocument, SyncedNote, SyncTombstones, Template } from '../types'
 
 /** Tombstones older than this are pruned — any machine offline longer re-uploads at worst. */
 const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000

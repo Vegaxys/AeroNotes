@@ -86,9 +86,15 @@ export class NotesStore {
   /** Cloud sync hook — fires on every user-driven mutation (not on applyRemote). */
   private onMutated: (() => void) | null = null
 
+  /**
+   * @param seedOnFirstRun Empty store → one folder and three sample notes.
+   * The desktop wants it; the phone must not: its samples (fixed ids) would
+   * sync into the cloud and come back over notes deleted long ago.
+   */
   constructor(
     initial: NotesStoreData,
-    private readonly save: (data: NotesStoreData) => void
+    private readonly save: (data: NotesStoreData) => void,
+    { seedOnFirstRun = true }: { seedOnFirstRun?: boolean } = {}
   ) {
     this.templates = new Map(initial.templates.map((tpl) => [tpl.id, tpl]))
     // Migration: stores written before 0.4 have no template tombstones.
@@ -99,7 +105,7 @@ export class NotesStore {
     )
 
     const persisted = initial.notes
-    if (persisted.length === 0 && this.folders.size === 0) {
+    if (seedOnFirstRun && persisted.length === 0 && this.folders.size === 0) {
       const folder = this.createFolder(t('folder.defaultName'))
       seedNotes(folder.id).forEach((note) => this.notes.set(note.id, note))
       this.scheduleSave()

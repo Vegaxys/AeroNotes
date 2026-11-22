@@ -1,18 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Note, NoteSortMode } from '@shared/types'
 import { t } from '@shared/i18n'
+import { filterNotes, sortFolderNotes } from '@renderer/state/noteListing'
 import { useNotesStore } from '@renderer/state/useNotesStore'
 import { useSettingsStore } from '@renderer/state/useSettingsStore'
 import { DockNotePreview } from './DockNotePreview'
 import { useCtrlKeyHeld } from './useCtrlKeyHeld'
-
-/** Pinned notes come first whatever the mode; these order the rest. */
-const COMPARATORS: Record<NoteSortMode, (a: Note, b: Note) => number> = {
-  manual: (a, b) => a.dockIndex - b.dockIndex,
-  created: (a, b) => b.createdAt - a.createdAt,
-  updated: (a, b) => b.updatedAt - a.updatedAt,
-  name: (a, b) => a.title.localeCompare(b.title)
-}
 
 export function DockNoteList(): React.JSX.Element {
   const notes = useNotesStore((s) => s.notes)
@@ -34,25 +26,11 @@ export function DockNoteList(): React.JSX.Element {
   const selectionMode = ctrlHeld || selectedNoteIds.length > 0
 
   const sortedNotes = useMemo(
-    () =>
-      notes
-        .filter((note) => note.folderId === currentFolderId)
-        .sort(
-          (a, b) =>
-            Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || COMPARATORS[sortMode](a, b)
-        ),
+    () => sortFolderNotes(notes, currentFolderId, sortMode),
     [notes, currentFolderId, sortMode]
   )
 
-  const filteredNotes = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return sortedNotes
-    return sortedNotes.filter(
-      (note) =>
-        note.title.toLowerCase().includes(query) ||
-        note.contentPreview.toLowerCase().includes(query)
-    )
-  }, [sortedNotes, searchQuery])
+  const filteredNotes = useMemo(() => filterNotes(sortedNotes, searchQuery), [sortedNotes, searchQuery])
 
   // While a card is dragged, accept dragover everywhere (the overlay window
   // covers the whole screen) so the cursor shows 'move' instead of the
