@@ -1,3 +1,9 @@
+plugins {
+    // Some Capacitor plugins (filesystem) compile with a Java 21 toolchain:
+    // Gradle fetches it into ~/.gradle/jdks when the machine has none.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
 include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')

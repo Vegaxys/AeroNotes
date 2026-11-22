@@ -11,7 +11,7 @@ let imagesBaseUrl: string | null = null
 export async function initImageStore(): Promise<void> {
   try {
     const { uri } = await Filesystem.getUri({ directory: Directory.Data, path: IMAGES_DIR })
-    imagesBaseUrl = Capacitor.convertFileSrc(uri)
+    imagesBaseUrl = Capacitor.convertFileSrc(uri).replace(/\/+$/, '')
   } catch {
     imagesBaseUrl = null // browser preview: no file URLs, images stay unresolved
   }

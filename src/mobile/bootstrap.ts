@@ -1,5 +1,5 @@
 import { resolveLocale, setLocale } from '@shared/i18n'
-import { installMobileBridge } from './mobileBridge'
+import { installMobileBridge } from './platform/mobileBridge'
 
 /**
  * Side-effect module — it MUST be the first import of main.tsx. The shared

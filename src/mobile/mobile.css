@@ -1,58 +1,111 @@
+@import 'tailwindcss';
+/* Shared editor UI (slash menu, template pills) lives outside the Vite root. */
+@source '../renderer/src';
+
+/* Figma « AeroNotes Mobile » variables (dark), plus the desktop tokens the
+ * shared editor components rely on. */
+@theme {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --color-accent: #7c9dff;
+  --color-accent-strong: #5b7cff;
+  --color-glass: rgba(255, 255, 255, 0.4);
+  --color-glass-strong: rgba(255, 255, 255, 0.2);
+  --color-glass-border: rgba(255, 255, 255, 0.22);
+
+  --color-m-bg: #121214;
+  --color-m-surface: #1c1c21;
+  --color-m-raised: #2a2a31;
+  --color-m-glass: rgba(42, 42, 49, 0.88);
+  --color-m-border: rgba(255, 255, 255, 0.1);
+  --color-m-text: #f3f4f7;
+  --color-m-muted: #9a9ca5;
+  --color-m-danger: #f87171;
+  --color-m-ink: #1e2230;
+  --font-sans: Roboto, system-ui, sans-serif;
+}
+
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
-  background: #121214;
+  background: var(--color-m-bg);
+  color: var(--color-m-text);
+  font-family: var(--font-sans);
   overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 /* Capacitor's SystemBars plugin (insetsHandling: 'css') injects these
  * variables; env() is the fallback for a WebView that honours viewport-fit. */
-.mobile-safe-top {
-  height: max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px));
-  flex-shrink: 0;
+.safe-top {
+  padding-top: max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px));
 }
 
-.mobile-safe-bottom {
-  height: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
-  flex-shrink: 0;
-}
-
-/* Same inset as padding, for a block that has content of its own. */
-.mobile-safe-pad-bottom {
+.safe-bottom {
   padding-bottom: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
 }
 
-/* Floating 48 dp button over the note (Figma « icon-button »). In the
- * components layer so a Tailwind utility (bg-…) can still override it. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Floating 48 dp button (Figma « icon-button »). In the components layer so
+ * a utility (bg-…) can still override it. */
 @layer components {
   .glass-button {
     display: flex;
     height: 48px;
     width: 48px;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(42, 42, 49, 0.88);
-    color: #f3f4f7;
+    border: 1px solid var(--color-m-border);
+    background: var(--color-m-glass);
+    color: var(--color-m-text);
   }
 }
 
-/* The desktop editor keeps a left gutter for its block drag handle: no handle
- * on a phone, so no gutter, and touch-sized checkboxes. */
-.mobile-note .ProseMirror {
-  min-height: 60vh;
+/* The note body: selectable text again, light native controls on the
+ * light post-it, touch-sized checkboxes, no desktop drag-handle gutter. */
+.mobile-note {
+  user-select: text;
+  color-scheme: light;
 }
 
-/* The page is dark but the note is a light post-it: native controls in it
- * (checkboxes) must use their light look. */
-.mobile-note {
-  color-scheme: light;
+.mobile-note .ProseMirror {
+  min-height: 50vh;
 }
 
 .mobile-note ul[data-type='taskList'] li > label input[type='checkbox'] {
   width: 20px;
   height: 20px;
+}
+
+/* Card → note zoom (View Transitions API, see app/viewTransition.ts). */
+::view-transition-group(note-sheet) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
 }

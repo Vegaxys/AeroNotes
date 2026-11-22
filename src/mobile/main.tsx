@@ -2,12 +2,11 @@
 import './bootstrap'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { MobileNoteScreen } from './MobileNoteScreen'
-import '@renderer/styles/theme.css'
+import { MobileApp } from './app/MobileApp'
 import './mobile.css'
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
-    <MobileNoteScreen />
+    <MobileApp />
   </StrictMode>
 )
