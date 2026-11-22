@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/react'
 import { t } from '@shared/i18n'
 import { HIGHLIGHT_COLORS } from './highlightColors'
 import { normalizeWebUrl } from './linkUrl'
+import { TEXT_COLORS } from './textColors'
 
 interface BubbleToolbarProps {
   editor: Editor
@@ -14,8 +15,6 @@ interface ToolbarButtonProps {
   onClick: () => void
   children: React.ReactNode
 }
-
-const TEXT_COLORS = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#c084fc']
 
 function ToolbarButton({ active, onClick, children }: ToolbarButtonProps): React.JSX.Element {
   return (

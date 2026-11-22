@@ -1,0 +1,58 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #121214;
+  overscroll-behavior: none;
+}
+
+/* Capacitor's SystemBars plugin (insetsHandling: 'css') injects these
+ * variables; env() is the fallback for a WebView that honours viewport-fit. */
+.mobile-safe-top {
+  height: max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px));
+  flex-shrink: 0;
+}
+
+.mobile-safe-bottom {
+  height: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
+
+/* Same inset as padding, for a block that has content of its own. */
+.mobile-safe-pad-bottom {
+  padding-bottom: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+}
+
+/* Floating 48 dp button over the note (Figma « icon-button »). In the
+ * components layer so a Tailwind utility (bg-…) can still override it. */
+@layer components {
+  .glass-button {
+    display: flex;
+    height: 48px;
+    width: 48px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(42, 42, 49, 0.88);
+    color: #f3f4f7;
+  }
+}
+
+/* The desktop editor keeps a left gutter for its block drag handle: no handle
+ * on a phone, so no gutter, and touch-sized checkboxes. */
+.mobile-note .ProseMirror {
+  min-height: 60vh;
+}
+
+/* The page is dark but the note is a light post-it: native controls in it
+ * (checkboxes) must use their light look. */
+.mobile-note {
+  color-scheme: light;
+}
+
+.mobile-note ul[data-type='taskList'] li > label input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+}

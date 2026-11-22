@@ -14,6 +14,13 @@ Deux gros cycles de corrections post-prototype ont eu lieu (voir l'historique gi
 - **Ligne d'indicateur de drop** : le padding vertical autour de la ligne (actuellement 25px, voir `.block-drop-indicator` dans `editor.css`) a été ajusté plusieurs fois sans que l'utilisateur confirme que le résultat final soit satisfaisant ("Ca marche pas mais on passe..." — probablement pas bloquant, mais à revisiter si demandé).
 - Aucun autre bug connu au moment de la rédaction — mais étant donné le rythme de cette session (beaucoup d'allers-retours de test), s'attendre à ce que l'utilisateur remonte encore des ajustements visuels/UX en testant plus.
 
+## Session du 2026-11-22 : app Android (prototype) + synchro avant édition (à tester par l'utilisateur)
+
+- **Plan et planches** : [docs/ANDROID_PLAN.md](docs/ANDROID_PLAN.md), planches UI dans Figma (« Sticky Note App », page AeroNote Android). L'utilisateur a validé : Dossiers à gauche, Réglages à droite, swipe sur le contenu (jamais depuis le bord, réservé au geste retour d'Android).
+- **Synchro avant toute modification (PC)** : au lancement et au réveil de veille (`powerMonitor` `resume`), si un compte est connecté, `syncEngine` pose `SyncStatus.editingLocked` et synchronise tout de suite (plus de délai de 3 s). Le dock et les fenêtres de notes passent `inert` avec une pastille « Synchronisation… » (`useEditingLocked`, `SyncLockNotice`) jusqu'à la fin d'une synchro **démarrée après** le verrou (succès ou échec), ou 10 s au plus. La capture rapide n'est pas verrouillée (note neuve). Raison : modifier une copie périmée lui donne un `updatedAt` plus récent, donc elle gagnerait la fusion contre les changements d'une autre machine. Typecheck OK, **pas encore testé dans l'app** (il faut un compte connecté).
+- **Prototype Android** (`src/mobile/`, Capacitor 8, projet natif `android/`) : une seule note plein écran, mode lecture / édition, barre d'outils contextuelle au-dessus du clavier (curseur / sélection / tableau). Il réutilise les extensions Tiptap du desktop (`createNoteEditorExtensions`) avec deux retouches mobiles : `webLinkClick` remplacé par `MobileLinkTap` (lien ouvert seulement en lecture) et cases de checklist cochables en lecture. Note stockée en `localStorage`, ni store ni synchro. `window.aeronotes` est un pont partiel (`mobileBridge.ts`) installé par `bootstrap.ts`, **premier import** de `main.tsx` : les stores partagés appellent le pont dès leur import. Le bandeau `vh · vv · kb` en haut sert à vérifier le comportement du clavier sur le téléphone. But du test : Gboard + ProseMirror (saisie, prédictions, retour arrière, Markdown), barre collée au clavier.
+- **Résultat du test sur le téléphone de l'utilisateur** (Xiaomi « madrid », HyperOS, Android 17, WebView 157) : **tout marche** — saisie Gboard, retour arrière, Markdown, sélection et barre contextuelle, tableau, lecture (cases, lien → navigateur), persistance. La WebView rétrécit au-dessus du clavier (Capacitor 8 SystemBars), donc la barre fixée en bas se colle au clavier sans calcul. Aucune erreur JS. Le risque n°1 du plan est levé ; reste le style, volontairement brut dans le proto. Sur ce téléphone : activer « Installer via USB » dans les options développeur (sinon `INSTALL_FAILED_USER_RESTRICTED`), et `screencap` exige `-d <display id>` (deux écrans).
+
 ## Fix du 2026-11-12 : cliquer à côté d'un lien l'ouvrait (à re-tester par l'utilisateur)
 
 - **Clic à côté d'un lien** : `WebLinkClick` et `LocalLink` lisaient le lien dans les marques de la position cliquée. Un clic dans le vide à droite d'un lien (ou à gauche, en début de ligne) tombe sur le bord du lien, où ces marques le contiennent encore → le lien s'ouvrait au lieu de placer le curseur. Ils partent maintenant de l'élément DOM réellement cliqué (`a[href]` / `.local-link`).
@@ -236,6 +243,9 @@ Plusieurs tentatives de configuration (padding, offset positif/négatif, `comput
 ### Le cache d'electron-builder plante avec `EXDEV: cross-device link not permitted`
 Le dossier cache par défaut (`%LOCALAPPDATA%\electron-builder\Cache`) est sur un volume différent du projet sur cette machine. `ELECTRON_BUILDER_CACHE` doit pointer vers un **chemin absolu** (un chemin relatif via `cross-env` ne suffit pas de façon fiable) — voir `scripts/build-win.cjs`, qui résout le chemin explicitement avant de lancer `electron-builder`.
 
+### Gradle et le JDK d'Android Studio
+La seule JVM récente de la machine est celle d'Android Studio (`C:\Program Files\Android\Android Studio\jbr`, Java 25) ; le Gradle 8.14 du template Capacitor ne tourne pas dessus (« Unsupported class file major version 69 »). Le wrapper de `android/` est passé en **Gradle 9.2.0** (compatible Java 25, AGP 8.13 OK). Ne pas laisser `npx cap add` / une mise à jour de Capacitor le remettre en 8.x.
+
 ### Multi-instances de `npm run dev`
 Pendant un long débogage, il est facile de se retrouver avec plusieurs process `electron-vite dev` qui tournent en même temps (un lancé par Claude, un autre par l'utilisateur dans VS Code) sans s'en rendre compte — chacun sur un port différent, chacun avec son propre état, ce qui fait ressembler des correctifs qui marchent à des correctifs qui "ne changent rien". Si un correctif semble ne jamais s'appliquer malgré un rebuild propre, vérifier `Get-CimInstance Win32_Process -Filter "Name='node.exe'"` (PowerShell) pour des instances dupliquées avant de continuer à chercher le bug ailleurs. **Une seule personne (utilisateur ou Claude, pas les deux) devrait lancer `npm run dev` à la fois.**
 
@@ -246,6 +256,15 @@ npm run dev          # dev avec HMR
 npm run typecheck    # tsc sur main + renderer
 npm run build        # build de prod (electron-vite)
 npm run dist:win     # build + installeur NSIS dans ./release
+npm run mobile:dev   # prototype mobile dans un navigateur (port 5173)
+npm run android:sync # build du bundle mobile + copie dans android/
+```
+
+APK de debug et installation sur le téléphone branché en USB (débogage USB activé) :
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+cd android; .\gradlew.bat assembleDebug; cd ..
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
 Pour tuer des process Electron orphelins sous Windows (PowerShell) :
