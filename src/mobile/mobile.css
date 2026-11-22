@@ -196,6 +196,29 @@ body,
   animation: palette-in 300ms var(--spring);
 }
 
+/* Swipe between pages: the page leaving shrinks and dims, the one arriving
+ * grows into place, following the finger (scroll-driven, no JS). The
+ * transform is identity only when a page sits exactly in view, which is why
+ * sheets are portalled out of the pages (see BottomSheet). */
+@supports (animation-timeline: view()) {
+  @keyframes page-depth {
+    0%,
+    100% {
+      transform: scale(0.9);
+      opacity: 0.35;
+    }
+    50% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
+  .pager-page {
+    animation: page-depth linear both;
+    animation-timeline: view(inline);
+  }
+}
+
 /* ---- Note body ---- */
 
 .mobile-note ul[data-type='taskList'] li {
@@ -240,6 +263,12 @@ body,
   font-weight: 800;
 }
 
+/* Bold inside a heading must stay heavier than the heading itself; the
+ * browser's 700 would look *lighter* than the 800 above, so B seemed inverted. */
+.mobile-note :is(h1, h2, h3) :is(strong, b) {
+  font-weight: 900;
+}
+
 /* Card → note zoom (View Transitions API, see app/viewTransition.ts). */
 ::view-transition-group(note-sheet) {
   animation-duration: 300ms;
@@ -258,7 +287,8 @@ body,
   .anim-fade-in,
   .anim-sheet-in,
   .anim-tools-in,
-  .anim-palette-in {
+  .anim-palette-in,
+  .pager-page {
     animation: none;
   }
 

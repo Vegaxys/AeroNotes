@@ -17,7 +17,7 @@ import { zoomNote } from './viewTransition'
 const PAGES: Page[] = ['folders', 'notes', 'settings']
 
 /** Page change from a button: short and decelerating, like a fling (native smooth scroll takes ~0.5 s). */
-const PAGE_SLIDE_MS = 260
+const PAGE_SLIDE_MS = 150
 const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3
 
 function slidePager(pager: HTMLElement, targetLeft: number): void {
@@ -126,17 +126,17 @@ function AppShell(): React.JSX.Element {
         }}
         className="no-scrollbar flex h-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
       >
-        <section className="h-full w-full shrink-0 snap-start">
+        <section className="pager-page h-full w-full shrink-0 snap-start">
           <FoldersPage onFolderChosen={() => goToPage('notes')} onOpenTrash={() => setTrashOpen(true)} />
         </section>
-        <section className="h-full w-full shrink-0 snap-start">
+        <section className="pager-page h-full w-full shrink-0 snap-start">
           <NotesPage
             onOpenNote={openExisting}
             onNoteActions={(target) => setActionsFor(target.id)}
             onShowFolders={() => goToPage('folders')}
           />
         </section>
-        <section className="h-full w-full shrink-0 snap-start">
+        <section className="pager-page h-full w-full shrink-0 snap-start">
           <SettingsPage />
         </section>
       </div>

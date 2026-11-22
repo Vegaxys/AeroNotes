@@ -113,7 +113,11 @@ export function NoteScreen({ note, editing, onEditingChange, onClose, onActions 
   return (
     <div className="safe-top fixed inset-0 z-20 flex flex-col bg-m-bg">
       <div
-        className="relative mx-2.5 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[28px] text-m-ink"
+        // In read mode the post-it runs under the gesture bar: one element, so
+        // a gradient stays continuous to the bottom edge.
+        className={`relative mx-2.5 mt-1 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[28px] text-m-ink ${
+          editable && editor ? '' : 'safe-bottom'
+        }`}
         style={{ background: noteColorToCss(note.color), viewTransitionName: NOTE_SHEET_TRANSITION }}
       >
         <div className="flex items-center gap-2.5 px-3 pt-3">
@@ -179,13 +183,11 @@ export function NoteScreen({ note, editing, onEditingChange, onClose, onActions 
           </div>
         )}
       </div>
-      {editable && editor ? (
+      {editable && editor && (
         // Above the keyboard there is no navigation bar to clear.
         <div className={keyboardVisible ? '' : 'safe-bottom bg-m-raised'}>
           <MobileEditToolbar editor={editor} onHideKeyboard={hideKeyboard} />
         </div>
-      ) : (
-        <div className="safe-bottom mx-2.5" style={{ background: noteColorToCss(note.color) }} />
       )}
     </div>
   )

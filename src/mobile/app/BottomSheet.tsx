@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 interface BottomSheetProps {
   onClose: () => void
   children: React.ReactNode
@@ -5,16 +6,21 @@ interface BottomSheetProps {
   label: string
 }
 
-/** Sheet sliding over a dimmed screen (Figma board 07); tapping the dim closes it. */
+/**
+ * Sheet sliding over a dimmed screen (Figma board 07); tapping the dim closes
+ * it. Portalled to <body>: the swipe pages are transformed while they move,
+ * and a transformed ancestor would trap `position: fixed` inside the page.
+ */
 export function BottomSheet({ onClose, children, label }: BottomSheetProps): React.JSX.Element {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={label}>
       <button type="button" aria-label={label} className="anim-fade-in absolute inset-0 bg-black/55" onClick={onClose} />
       <div className="anim-sheet-in safe-bottom relative max-h-[85%] overflow-y-auto rounded-t-[28px] bg-m-surface px-4 pt-2.5 pb-4">
         <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-m-muted/60" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
