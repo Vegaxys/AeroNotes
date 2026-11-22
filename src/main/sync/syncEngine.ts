@@ -1,15 +1,9 @@
 import { join, extname } from 'path'
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises'
 import { app, BrowserWindow, powerMonitor } from 'electron'
-import type {
-  Folder,
-  SyncDocument,
-  SyncedNote,
-  SyncStatus,
-  SyncTombstones,
-  Template
-} from '@shared/types'
+import type { SyncDocument, SyncStatus } from '@shared/types'
 import { IPC_CHANNELS } from '@shared/ipcChannels'
+import { merge } from '@shared/syncMerge'
 import { getImagesDir } from '../protocols/imageProtocol'
 import { notesStore } from '../store/notesStore'
 import { broadcastFolders, broadcastNotes } from '../ipc/notesHandlers'
@@ -27,8 +21,6 @@ const PERIODIC_SYNC_MS = 5 * 60_000
  * lock the user out. An offline machine fails fast and unlocks sooner.
  */
 const EDIT_LOCK_TIMEOUT_MS = 10_000
-/** Tombstones older than this are pruned — any machine offline longer re-uploads at worst. */
-const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
   png: 'image/png',
@@ -62,108 +54,6 @@ export function getSyncStatus(): SyncStatus {
 /** Surfaces an auth-flow failure (e.g. sign-in cancelled/timeout) in the status UI. */
 export function reportSyncError(message: string): void {
   setStatus({ state: 'error', error: message })
-}
-
-interface MergeResult {
-  merged: SyncDocument
-  /** The merged state differs from what this machine had — apply it locally. */
-  localChanged: boolean
-  /** The merged state differs from the cloud copy — upload it. */
-  remoteChanged: boolean
-}
-
-function mergeTombstones(local: SyncTombstones, remote: SyncTombstones): SyncTombstones {
-  const cutoff = Date.now() - TOMBSTONE_TTL_MS
-  const mergeSide = (a: Record<string, number>, b: Record<string, number>): Record<string, number> => {
-    const out: Record<string, number> = {}
-    for (const [id, ts] of [...Object.entries(a), ...Object.entries(b)]) {
-      if (ts >= cutoff && (out[id] === undefined || ts > out[id])) out[id] = ts
-    }
-    return out
-  }
-  return {
-    notes: mergeSide(local.notes, remote.notes),
-    folders: mergeSide(local.folders, remote.folders),
-    // Docs uploaded before 0.4 have no template tombstones.
-    templates: mergeSide(local.templates ?? {}, remote.templates ?? {})
-  }
-}
-
-/**
- * Per-entity last-writer-wins on updatedAt; a tombstone wins over any version
- * older than it. Never invents data — but never silently loses a note either:
- * a note that survives while its folder was deleted gets its folder revived.
- */
-export function merge(local: SyncDocument, remote: SyncDocument): MergeResult {
-  const tombstones = mergeTombstones(local.tombstones, remote.tombstones)
-
-  const pickNewer = <T extends { updatedAt: number }>(a?: T, b?: T): T | undefined => {
-    if (!a) return b
-    if (!b) return a
-    return b.updatedAt > a.updatedAt ? b : a
-  }
-
-  const notes: Record<string, SyncedNote> = {}
-  for (const id of new Set([...Object.keys(local.notes), ...Object.keys(remote.notes)])) {
-    const winner = pickNewer(local.notes[id], remote.notes[id])
-    if (winner && !(tombstones.notes[id] >= winner.updatedAt)) {
-      notes[id] = winner
-      delete tombstones.notes[id]
-    }
-  }
-
-  const folders: Record<string, Folder> = {}
-  for (const id of new Set([...Object.keys(local.folders), ...Object.keys(remote.folders)])) {
-    const winner = pickNewer(local.folders[id], remote.folders[id])
-    if (winner && !(tombstones.folders[id] >= winner.updatedAt)) {
-      folders[id] = winner
-      delete tombstones.folders[id]
-    }
-  }
-
-  // A surviving note must have a folder: revive it from either side if its
-  // folder lost the tombstone race (losing the note would be worse).
-  for (const note of Object.values(notes)) {
-    if (!folders[note.folderId]) {
-      const revived = local.folders[note.folderId] ?? remote.folders[note.folderId]
-      if (revived) {
-        folders[revived.id] = revived
-        delete tombstones.folders[revived.id]
-      }
-    }
-  }
-
-  const templates: Record<string, Template> = {}
-  const localTemplates = local.templates ?? {}
-  const remoteTemplates = remote.templates ?? {}
-  for (const id of new Set([...Object.keys(localTemplates), ...Object.keys(remoteTemplates)])) {
-    const winner = pickNewer(localTemplates[id], remoteTemplates[id])
-    if (winner && !(tombstones.templates[id] >= winner.updatedAt)) {
-      templates[id] = winner
-      delete tombstones.templates[id]
-    }
-  }
-
-  const merged: SyncDocument = { schemaVersion: 1, notes, folders, templates, tombstones }
-
-  const viewOf = (doc: SyncDocument): string =>
-    JSON.stringify([
-      Object.values(doc.notes)
-        .map((n) => `${n.id}:${n.updatedAt}`)
-        .sort(),
-      Object.values(doc.folders)
-        .map((f) => `${f.id}:${f.updatedAt}`)
-        .sort(),
-      Object.values(doc.templates ?? {})
-        .map((tpl) => `${tpl.id}:${tpl.updatedAt}`)
-        .sort()
-    ])
-
-  return {
-    merged,
-    localChanged: viewOf(merged) !== viewOf(local),
-    remoteChanged: viewOf(merged) !== viewOf(remote)
-  }
 }
 
 /** Every image filename referenced by any note in the document. */

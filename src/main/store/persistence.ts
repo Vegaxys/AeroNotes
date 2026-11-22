@@ -1,4 +1,5 @@
 import Store from 'electron-store'
+import type { NotesStoreData } from '@shared/notesStore'
 import type { AppSettings, Folder, Note, SyncTombstones, Template } from '@shared/types'
 
 interface PersistedSchema {
@@ -34,11 +35,22 @@ const diskStore = new Store<PersistedSchema>({
   }
 })
 
-export function loadNotes(): Note[] {
+export function loadNotesStoreData(): NotesStoreData {
+  return { notes: loadNotes(), folders: loadFolders(), templates: loadTemplates(), tombstones: loadTombstones() }
+}
+
+export function saveNotesStoreData(data: NotesStoreData): void {
+  saveNotes(data.notes)
+  saveFolders(data.folders)
+  saveTemplates(data.templates)
+  saveTombstones(data.tombstones)
+}
+
+function loadNotes(): Note[] {
   return Object.values(diskStore.get('notes'))
 }
 
-export function saveNotes(notes: Note[]): void {
+function saveNotes(notes: Note[]): void {
   const asRecord: Record<string, Note> = {}
   notes.forEach((note) => {
     asRecord[note.id] = note
@@ -46,11 +58,11 @@ export function saveNotes(notes: Note[]): void {
   diskStore.set('notes', asRecord)
 }
 
-export function loadFolders(): Folder[] {
+function loadFolders(): Folder[] {
   return Object.values(diskStore.get('folders'))
 }
 
-export function saveFolders(folders: Folder[]): void {
+function saveFolders(folders: Folder[]): void {
   const asRecord: Record<string, Folder> = {}
   folders.forEach((folder) => {
     asRecord[folder.id] = folder
@@ -58,18 +70,15 @@ export function saveFolders(folders: Folder[]): void {
   diskStore.set('folders', asRecord)
 }
 
-export function loadTombstones(): SyncTombstones {
-  const tombstones = diskStore.get('tombstones')
-  // Migration: stores written before 0.4 have no template tombstones.
-  tombstones.templates ??= {}
-  return tombstones
+function loadTombstones(): SyncTombstones {
+  return diskStore.get('tombstones')
 }
 
-export function loadTemplates(): Template[] {
+function loadTemplates(): Template[] {
   return Object.values(diskStore.get('templates'))
 }
 
-export function saveTemplates(templates: Template[]): void {
+function saveTemplates(templates: Template[]): void {
   const asRecord: Record<string, Template> = {}
   templates.forEach((template) => {
     asRecord[template.id] = template
@@ -77,7 +86,7 @@ export function saveTemplates(templates: Template[]): void {
   diskStore.set('templates', asRecord)
 }
 
-export function saveTombstones(tombstones: SyncTombstones): void {
+function saveTombstones(tombstones: SyncTombstones): void {
   diskStore.set('tombstones', tombstones)
 }
 
