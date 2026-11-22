@@ -16,13 +16,6 @@
     "android:sync": "npm run mobile:build && cap sync android"
   },
   "dependencies": {
-    "@capacitor/android": "^8.6.2",
-    "@capacitor/app": "^8.1.2",
-    "@capacitor/browser": "^8.0.5",
-    "@capacitor/core": "^8.6.2",
-    "@capacitor/filesystem": "^8.1.5",
-    "@capacitor/keyboard": "^8.0.6",
-    "@capacitor/share": "^8.0.3",
     "@tiptap/core": "^3.31.3",
     "@tiptap/extension-color": "^3.31.3",
     "@tiptap/extension-details": "^3.31.3",
@@ -47,7 +40,14 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
     "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/share": "^8.0.3",
     "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
