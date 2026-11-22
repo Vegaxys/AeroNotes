@@ -56,4 +56,10 @@ Règle validée le 2026-11-22, valable sur PC comme sur mobile : quand l'app s'o
 
 `src/mobile/` + `android/` : une note plein écran avec l'éditeur partagé, lecture / édition et barre contextuelle. Sert à valider sur le téléphone le point le plus risqué (clavier Android + ProseMirror) avant de construire le reste. Commandes dans HANDOFF.md.
 
-**Résultat (2026-11-22, Android 17 / WebView 157) : validé.** Saisie Gboard, Markdown, sélection, barre contextuelle collée au clavier, lecture, persistance : tout marche, sans erreur. Prochaine étape : le style des planches, puis les étapes 1 à 5 (cœur partagé, stockage, écrans, synchro).
+## App (2026-11-22, branche `android-app`)
+
+Étapes 1 à 5 faites : store, fusion, moteur de synchro et client Drive partagés (`src/shared`), pont `window.aeronotes` mobile (`src/mobile/platform`), écrans des planches (`src/mobile/app`), connexion Google native (`GoogleDriveAuthPlugin.java`, identifiant OAuth **Android** du même projet Cloud : package `com.aeronotes.app` + SHA-1 de la clé de debug). Première synchro sur le téléphone de l'utilisateur : 43 notes, 3 dossiers, OK.
+
+Reste : rappels (notifications locales), couleur personnalisée, sélection multiple, partage vers l'app, clé de signature release (+ son identifiant OAuth Android).
+
+**Résultat du prototype (2026-11-22, Android 17 / WebView 157) : validé.** Saisie Gboard, Markdown, sélection, barre contextuelle collée au clavier, lecture, persistance : tout marche, sans erreur. Prochaine étape : le style des planches, puis les étapes 1 à 5 (cœur partagé, stockage, écrans, synchro).

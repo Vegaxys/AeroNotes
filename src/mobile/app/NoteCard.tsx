@@ -76,7 +76,8 @@ export function NoteCard({ note, onOpen, onLongPress }: NoteCardProps): React.JS
       onClick={() => {
         if (!longPressed.current) onOpen()
       }}
-      className="flex w-full flex-col gap-2 rounded-[20px] px-3.5 pt-3.5 pb-3 text-left text-m-ink"
+      // wrap-anywhere: a long URL has no space to break at and would overflow the column.
+      className="flex w-full flex-col gap-2 rounded-[20px] px-3.5 pt-3.5 pb-3 text-left text-m-ink wrap-anywhere"
       style={{ background: noteColorToCss(note.color) }}
     >
       <span className="flex w-full items-start gap-1.5">
