@@ -6,6 +6,8 @@ directories:
 
 files:
   - out/**/*
+  # The Android bundle (vite.mobile.config.ts) has no business in the desktop app.
+  - "!out/mobile/**"
   - package.json
 
 extraResources:
